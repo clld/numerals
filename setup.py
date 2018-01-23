@@ -19,7 +19,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'clld',
+        'clld', 'clldmpg',
     ],
     extras_require={
         'dev': ['flake8', 'waitress'],
