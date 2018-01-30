@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
 
-
 setup(
     name='numerals',
     version='0.0',
@@ -19,14 +18,21 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'clld', 'clldmpg>=3.1.1',
+        'clld~=4.0',
+        'clldmpg>=3.1.1',
+        'sqlalchemy',
+        'waitress',
     ],
     extras_require={
-        'dev': ['flake8', 'waitress'],
+        'dev': [
+            'flake8',
+            'waitress',
+            'tox',
+        ],
         'test': [
             'mock',
             'pytest>=3.1',
-            'pytest-clld',
+            'pytest-clld>=0.4',
             'pytest-mock',
             'pytest-cov',
             'coverage>=4.2',
