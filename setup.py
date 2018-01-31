@@ -26,7 +26,7 @@ setup(
     extras_require={
         'dev': [
             'flake8',
-            'waitress',
+            'psycopg2',
             'tox',
         ],
         'test': [

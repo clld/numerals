@@ -1,2 +1,10 @@
-def test_home(app):
-    app.get_html('/legal', status=200)
+import pytest
+
+
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ('get_html', '/'),
+    ])
+def test_pages(app, method, path):
+    getattr(app, method)(path)
