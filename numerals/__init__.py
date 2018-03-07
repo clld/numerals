@@ -4,6 +4,15 @@ from pyramid.config import Configurator
 from numerals import models
 
 
+def _(s):
+    return s
+
+
+_('Language')
+_('Languages')
+
+
+# noinspection PyUnusedLocal
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
