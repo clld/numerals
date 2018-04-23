@@ -5,6 +5,9 @@ import string
 import sys
 import unicodedata
 from itertools import groupby
+from collections import Counter
+
+from six import text_type
 
 import xlrd
 from clld.db.meta import DBSession
@@ -58,10 +61,13 @@ def main(args):
         row = dict(zip(header, row))
         meta[(row['lg_link'], row['variant'])] = row
 
+    basis_parameter = data.add(common.Parameter, 'p', id='p', name='Base')
+
+    bases = Counter()
     for key, items in groupby(
             sorted(iter_sheet_rows('NUMERAL',
                                    args.data_file('numeral_301216.xlsx')),
-                   key=lambda r: (str(r[2]), str(r[3]), str(r[0]))),
+                   key=lambda r: (text_type(r[2]), text_type(r[3]), text_type(r[0]))),
             lambda r: (r[2], int(r[3] or 1))):
         if key not in meta:
             continue
@@ -82,6 +88,8 @@ def main(args):
         # if source:
         #     ds.add_sources(source)
         #     ref = source.id
+
+        items_, basis = [], None
         for concept, rows in groupby(items, lambda x: x[0]):
             parameter = data['Parameter'].get(concept)
 
@@ -89,7 +97,7 @@ def main(args):
                 parameter = data.add(
                     common.Parameter,
                     concept,
-                    id=slug(str(concept)),
+                    id=slug(text_type(concept)),
                     name=concept,
                 )
 
@@ -107,11 +115,42 @@ def main(args):
 
             for k, row in enumerate(rows):
                 if row[1]:
+                    if not basis:
+                        for item in items_:
+                            if item in row[1]:
+                                basis = concept - 1
+                    items_.append(row[1])
                     common.Value(id=vs_id + '-' + str(k), name=row[1],
                                  valueset=vs)
+        if basis:
+            basis = int(basis)
+            if basis <= 16:
+                de = data['DomainElement'].get(basis)
+                if not de:
+                    de = data.add(
+                        common.DomainElement,
+                        basis,
+                        id=text_type(basis),
+                        name=text_type(basis),
+                        parameter=basis_parameter)
+                vs = data.add(
+                    common.ValueSet,
+                    data['Variety'][lid].id + '-p',
+                    id=data['Variety'][lid].id + '-p',
+                    language=data['Variety'][lid],
+                    parameter=basis_parameter,
+                    contribution=contrib,
+                    # Comment=row[4] or None,
+                )
+
+                common.Value(id=data['Variety'][lid].id + '-p', valueset=vs,
+                             domainelement=de,
+                             )
 
     load_families(
-        Data(), [(l.description, l) for l in DBSession.query(common.Language)],
+        Data(),
+        [(l.description, l) for l in DBSession.query(common.Language)],
+        glottolog_repos='../../glottolog3/glottolog',
         strict=False
     )
 
@@ -146,6 +185,12 @@ def prime_cache(args):
     This procedure should be separate from the db initialization, because
     it will have to be run periodically whenever data has been updated.
     """
+    load_families(
+        Data(),
+        [(l.description, l) for l in DBSession.query(common.Language)],
+        glottolog_repos='../../glottolog3/glottolog',
+        strict=False
+    )
 
 
 if __name__ == '__main__':  # pragma: no cover
