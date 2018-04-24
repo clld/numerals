@@ -21,6 +21,7 @@ setup(
         'clld>=4.1.2',
         'clldmpg>=3.1.1',
         'clld-glottologfamily-plugin',
+        'clld-phylogeny-plugin>=1.1.0',
         'sqlalchemy',
         'waitress',
     ],

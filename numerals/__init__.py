@@ -1,7 +1,20 @@
+from clld.interfaces import IMapMarker
+from clld.lib.svg import data_url, icon
+from clld.web.icon import MapMarker
 from pyramid.config import Configurator
 
 # we must make sure custom models are known at database initialization!
 from numerals import models
+
+
+class NumeralsMapMarker(MapMarker):
+    def __call__(self, ctx, req):
+        color = models.get_color(ctx)
+
+        if not color:
+            return MapMarker.__call__(self, ctx, req)
+
+        return data_url(icon('c' + color))
 
 
 def _(s):
@@ -18,4 +31,6 @@ def main(global_config, **settings):
     """
     config = Configurator(settings=settings)
     config.include('clldmpg')
+    config.include('clld_phylogeny_plugin')
+    config.registry.registerUtility(NumeralsMapMarker(), IMapMarker)
     return config.make_wsgi_app()

@@ -4,20 +4,24 @@ import re
 import string
 import sys
 import unicodedata
-from itertools import groupby
 from collections import Counter
-
-from six import text_type
+from itertools import groupby
 
 import xlrd
 from clld.db.meta import DBSession
 from clld.db.models import common
+from clld.lib.color import qualitative_colors
 from clld.scripts.util import initializedb, Data
 from clld_glottologfamily_plugin.util import load_families
+from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
 from clldutils.misc import slug
+from six import text_type
 
 import numerals
 from numerals import models
+from numerals.scripts.global_tree import tree
+
+GL_REPOS = ""
 
 
 def main(args):
@@ -150,9 +154,21 @@ def main(args):
     load_families(
         Data(),
         [(l.description, l) for l in DBSession.query(common.Language)],
-        glottolog_repos='../../glottolog3/glottolog',
+        glottolog_repos=GL_REPOS,
         strict=False
     )
+
+    x = DBSession.query(models.Variety.family_pk).distinct().all()
+    families = dict(zip([r[0] for r in x], qualitative_colors(len(x))))
+
+    for l in DBSession.query(models.Variety):
+        l.jsondata = {'color': families[l.family_pk]}
+
+    p = common.Parameter.get('p')
+    colors = qualitative_colors(len(p.domain))
+
+    for i, de in enumerate(p.domain):
+        de.jsondata = {'color': colors[i]}
 
 
 def iter_sheet_rows(sname, fname):
@@ -185,12 +201,29 @@ def prime_cache(args):
     This procedure should be separate from the db initialization, because
     it will have to be run periodically whenever data has been updated.
     """
-    load_families(
-        Data(),
-        [(l.description, l) for l in DBSession.query(common.Language)],
-        glottolog_repos='../../glottolog3/glottolog',
-        strict=False
+    DBSession.query(LanguageTreeLabel).delete()
+    DBSession.query(TreeLabel).delete()
+    DBSession.query(Phylogeny).delete()
+
+    newick, _ = tree([l.description for l in DBSession.query(common.Language) if l.description],
+                     gl_repos=GL_REPOS)
+
+    phylo = Phylogeny(
+        id='phy',
+        name='glottolog global tree',
+        newick=newick
     )
+
+    for l in DBSession.query(common.Language):
+        if l.description:
+            LanguageTreeLabel(
+                language=l,
+                treelabel=TreeLabel(
+                    id=l.id, name=l.description, phylogeny=phylo
+                )
+            )
+
+    DBSession.add(phylo)
 
 
 if __name__ == '__main__':  # pragma: no cover
