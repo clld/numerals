@@ -94,7 +94,7 @@ def main(args):
         #     ref = source.id
 
         items_, basis = [], None
-        for concept, rows in groupby(items, lambda x: x[0]):
+        for concept, rows in groupby(items, lambda x: int(x[0])):
             parameter = data['Parameter'].get(concept)
 
             if not parameter:
