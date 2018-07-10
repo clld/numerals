@@ -21,7 +21,7 @@ import numerals
 from numerals import models
 from numerals.scripts.global_tree import tree
 
-GL_REPOS = ""
+GL_REPO = '/Users/chrzyki/Coding/glottolog/'
 
 
 def main(args):
@@ -61,17 +61,24 @@ def main(args):
 
     meta = {}
 
+    row_break = 0
     for row in iter_sheet_rows('META', args.data_file('numeral_301216.xlsx')):
+        row_break += 1
+
         row = dict(zip(header, row))
         meta[(row['lg_link'], row['variant'])] = row
 
-    basis_parameter = data.add(common.Parameter, 'p', id='p', name='Base')
+        if row_break >= 10:
+            break
+
+    basis_parameter = data.add(common.Parameter, '0', id='0', name='Base')
 
     bases = Counter()
     for key, items in groupby(
             sorted(iter_sheet_rows('NUMERAL',
                                    args.data_file('numeral_301216.xlsx')),
-                   key=lambda r: (text_type(r[2]), text_type(r[3]), text_type(r[0]))),
+                   key=lambda r: (
+                   text_type(r[2]), text_type(r[3]), text_type(r[0]))),
             lambda r: (r[2], int(r[3] or 1))):
         if key not in meta:
             continue
@@ -154,7 +161,7 @@ def main(args):
     load_families(
         Data(),
         [(l.description, l) for l in DBSession.query(common.Language)],
-        glottolog_repos=GL_REPOS,
+        glottolog_repos=GL_REPO,
         strict=False
     )
 
@@ -164,7 +171,7 @@ def main(args):
     for l in DBSession.query(models.Variety):
         l.jsondata = {'color': families[l.family_pk]}
 
-    p = common.Parameter.get('p')
+    p = common.Parameter.get('0')
     colors = qualitative_colors(len(p.domain))
 
     for i, de in enumerate(p.domain):
@@ -205,8 +212,9 @@ def prime_cache(args):
     DBSession.query(TreeLabel).delete()
     DBSession.query(Phylogeny).delete()
 
-    newick, _ = tree([l.description for l in DBSession.query(common.Language) if l.description],
-                     gl_repos=GL_REPOS)
+    newick, _ = tree([l.description for l in DBSession.query(common.Language) if
+                      l.description],
+                     gl_repos=GL_REPO)
 
     phylo = Phylogeny(
         id='phy',
