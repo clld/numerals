@@ -1,6 +1,5 @@
-from clld.db.models.common import Language, Parameter
-from clld.web.datatables.base import LinkCol, DetailsRowLinkCol
-from clld.web.datatables.base import LinkToMapCol
+from clld.db.models.common import Language, Parameter, DomainElement
+from clld.web.datatables.base import LinkCol, DetailsRowLinkCol, LinkToMapCol, Col
 from clld.web.datatables.language import Languages
 from clld.web.datatables.parameter import Parameters
 from clld.web.datatables.value import Values, ValueNameCol

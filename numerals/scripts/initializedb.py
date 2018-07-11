@@ -4,7 +4,6 @@ import re
 import string
 import sys
 import unicodedata
-from collections import Counter
 from itertools import groupby
 
 import xlrd
@@ -61,24 +60,18 @@ def main(args):
 
     meta = {}
 
-    row_break = 0
     for row in iter_sheet_rows('META', args.data_file('numeral_301216.xlsx')):
-        row_break += 1
-
         row = dict(zip(header, row))
         meta[(row['lg_link'], row['variant'])] = row
 
-        if row_break >= 10:
-            break
-
     basis_parameter = data.add(common.Parameter, '0', id='0', name='Base')
 
-    bases = Counter()
+    #  bases = Counter()
     for key, items in groupby(
             sorted(iter_sheet_rows('NUMERAL',
                                    args.data_file('numeral_301216.xlsx')),
                    key=lambda r: (
-                   text_type(r[2]), text_type(r[3]), text_type(r[0]))),
+                           text_type(r[2]), text_type(r[3]), text_type(r[0]))),
             lambda r: (r[2], int(r[3] or 1))):
         if key not in meta:
             continue
@@ -101,7 +94,7 @@ def main(args):
         #     ref = source.id
 
         items_, basis = [], None
-        for concept, rows in groupby(items, lambda x: int(x[0])):
+        for concept, rows in groupby(items, lambda n: int(n[0])):
             parameter = data['Parameter'].get(concept)
 
             if not parameter:
