@@ -1,13 +1,13 @@
 <%inherit file="../home_comp.mako"/>
 
-<%def name="sidebar()">
+<%doc><%def name="sidebar()">
     <div class="well">
         <h3>Sidebar</h3>
         <p>
             Content
         </p>
     </div>
-</%def>
+</%def></%doc>
 
 <h2>Welcome to Numeralbank!</h2>
 

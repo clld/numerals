@@ -44,5 +44,6 @@ def main(global_config, **settings):
         ('languages', partial(menu_item, 'languages', label='Languages')),
         ('contributors',
          partial(menu_item, 'contributors', label='Contributors')),
+        ('phylogenys', partial(menu_item, 'phylogenys', label='Phylogenies'))
     )
     return config.make_wsgi_app()
