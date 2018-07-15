@@ -121,6 +121,7 @@ def main(args):
                 if row[1]:
                     if not basis:
                         for item in items_:
+                            # Look for substring, if match is found base -1.
                             if item in row[1]:
                                 basis = concept - 1
                     items_.append(row[1])
