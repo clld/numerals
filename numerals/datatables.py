@@ -15,6 +15,12 @@ class NumCol(LinkCol):
         return cast(Parameter.id, Integer)
 
 
+class NumeralsComment(Col):
+    # TODO: Placeholder, until Lexibank data is in place.
+    def col_defs(self):
+        return ''
+
+
 class Varieties(Languages):
     def col_defs(self):
         return Languages.col_defs(self) + [FamilyCol(self, 'Family', Variety)]
@@ -57,6 +63,7 @@ class Datapoints(Values):
                 NumCol(self, 'parameter', model_col=Parameter.id,
                        get_object=lambda i: i.valueset.parameter),
                 ValueNameCol(self, 'value'),
+                NumeralsComment(self, 'comment')
             ]
 
 
