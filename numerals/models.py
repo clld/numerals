@@ -6,6 +6,7 @@ from sqlalchemy import (
     Column,
     Integer,
     ForeignKey,
+    Unicode
 )
 from zope.interface import implementer
 
@@ -32,9 +33,12 @@ def get_color(ctx):
     return color
 
 
-# -----------------------------------------------------------------------------
-# specialized common mapper classes
-# -----------------------------------------------------------------------------
+@implementer(interfaces.IValue)
+class NumberLexeme(CustomModelMixin, Value):
+    pk = Column(Integer, ForeignKey('value.pk'), primary_key=True)
+    comment = Column(Unicode)
+
+
 @implementer(interfaces.ILanguage)
 class Variety(CustomModelMixin, Language, HasFamilyMixin):
     pk = Column(Integer, ForeignKey('language.pk'), primary_key=True)
