@@ -8,15 +8,30 @@ from sqlalchemy import Integer
 from sqlalchemy.sql.expression import cast
 
 from numerals.models import Variety
+from numerals.util import get_concepticon_link
 
 
 class NumCol(LinkCol):
-    def order(self):
+    @staticmethod
+    def get_attrs(item):
+        return {'label': item}
+
+    @staticmethod
+    def order():
         return cast(Parameter.id, Integer)
 
 
 class NumeralsComment(Col):
     # TODO: Placeholder, until Lexibank data is in place.
+    def col_defs(self):
+        return ''
+
+
+class ConcepticonCol(Col):
+    # TODO: Placeholder, until Lexibank data is in place.
+    __kw__ = {"bSearchable": False, "bSortable": False}
+
+    @staticmethod
     def col_defs(self):
         return ''
 
@@ -34,7 +49,7 @@ class Numerals(Parameters):
         return opts
 
     def col_defs(self):
-        return [DetailsRowLinkCol(self, 'd'), NumCol(self, 'id')]
+        return [NumCol(self, 'name'), ConcepticonCol(self, 'concepticon')]
 
 
 class Datapoints(Values):
