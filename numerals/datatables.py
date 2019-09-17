@@ -54,9 +54,9 @@ class Datapoints(Values):
             ]
         else:
             return [
-                ValueNameCol(self, 'value'),
                 NumCol(self, 'parameter', model_col=Parameter.id,
-                       get_object=lambda i: i.valueset.parameter)
+                       get_object=lambda i: i.valueset.parameter),
+                ValueNameCol(self, 'value'),
             ]
 
 
