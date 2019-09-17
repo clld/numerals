@@ -32,8 +32,13 @@ class Numerals(Parameters):
 
 
 class Datapoints(Values):
+    def get_options(self):
+        opts = super(Values, self).get_options()
+        opts['aaSorting'] = [[0, 'asc'], [1, 'asc']]
+
+        return opts
+
     def col_defs(self):
-        # FIXME: Check whether this is displayed on the correct pages.
         if self.parameter:
             return [
                 LinkCol(self,
@@ -58,5 +63,4 @@ class Datapoints(Values):
 def includeme(config):
     config.register_datatable('languages', Varieties)
     config.register_datatable('parameters', Numerals)
-    config.register_datatable('values',
-                              Datapoints)  # FIXME: parameter overview is wrong
+    config.register_datatable('values', Datapoints)
