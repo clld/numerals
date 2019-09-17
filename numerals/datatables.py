@@ -11,11 +11,17 @@ from numerals.models import Variety
 from numerals.util import get_concepticon_link
 
 
-class NumCol(LinkCol):
+class NumeralParameterCol(LinkCol):
     @staticmethod
     def get_attrs(item):
-        return {'label': item}
+        return {"label": item}
 
+    @staticmethod
+    def order():
+        return cast(Parameter.id, Integer)
+
+
+class NumeralValueCol(LinkCol):
     @staticmethod
     def order():
         return cast(Parameter.id, Integer)
@@ -24,7 +30,7 @@ class NumCol(LinkCol):
 class NumeralsComment(Col):
     # TODO: Placeholder, until Lexibank data is in place.
     def col_defs(self):
-        return ''
+        return ""
 
 
 class ConcepticonCol(Col):
@@ -33,56 +39,66 @@ class ConcepticonCol(Col):
 
     @staticmethod
     def col_defs(self):
-        return ''
+        return ""
 
 
 class Varieties(Languages):
     def col_defs(self):
-        return Languages.col_defs(self) + [FamilyCol(self, 'Family', Variety)]
+        return Languages.col_defs(self) + [FamilyCol(self, "Family", Variety)]
 
 
 class Numerals(Parameters):
     def get_options(self):
         opts = super(Parameters, self).get_options()
-        opts['aaSorting'] = [[0, 'asc'], [1, 'asc']]
+        opts["aaSorting"] = [[0, "asc"], [1, "asc"]]
 
         return opts
 
     def col_defs(self):
-        return [NumCol(self, 'name'), ConcepticonCol(self, 'concepticon')]
+        return [NumeralParameterCol(self, "number"), ConcepticonCol(self, "concepticon")]
 
 
 class Datapoints(Values):
     def get_options(self):
         opts = super(Values, self).get_options()
-        opts['aaSorting'] = [[0, 'asc'], [1, 'asc']]
+        opts["aaSorting"] = [[0, "asc"], [1, "asc"]]
 
         return opts
 
     def col_defs(self):
         if self.parameter:
             return [
-                LinkCol(self,
-                        'language',
-                        model_col=Language.name,
-                        get_object=lambda i: i.valueset.language),
-                ValueNameCol(self, 'value'),
-                NumCol(self, 'parameter', model_col=Parameter.id,
-                       get_object=lambda i: i.valueset.parameter),
-                LinkToMapCol(self, 'm',
-                             get_object=lambda i: i.valueset.language,
-                             sTitle='Map Link'),
+                LinkCol(
+                    self,
+                    "language",
+                    model_col=Language.name,
+                    get_object=lambda i: i.valueset.language,
+                ),
+                ValueNameCol(self, "value"),
+                NumeralValueCol(
+                    self,
+                    "parameter",
+                    model_col=Parameter.id,
+                    get_object=lambda i: i.valueset.parameter,
+                ),
+                LinkToMapCol(
+                    self, "m", get_object=lambda i: i.valueset.language, sTitle="Map Link"
+                ),
             ]
         else:
             return [
-                NumCol(self, 'parameter', model_col=Parameter.id,
-                       get_object=lambda i: i.valueset.parameter),
-                ValueNameCol(self, 'value'),
-                NumeralsComment(self, 'comment')
+                NumeralValueCol(
+                    self,
+                    "parameter",
+                    model_col=Parameter.id,
+                    get_object=lambda i: i.valueset.parameter,
+                ),
+                ValueNameCol(self, "value"),
+                NumeralsComment(self, "comment"),
             ]
 
 
 def includeme(config):
-    config.register_datatable('languages', Varieties)
-    config.register_datatable('parameters', Numerals)
-    config.register_datatable('values', Datapoints)
+    config.register_datatable("languages", Varieties)
+    config.register_datatable("parameters", Numerals)
+    config.register_datatable("values", Datapoints)
