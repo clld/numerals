@@ -1,20 +1,12 @@
-from __future__ import unicode_literals
-
-import re
-import string
 import sys
-import unicodedata
-from itertools import groupby
 
-import xlrd
 from clld.db.meta import DBSession
 from clld.db.models import common
 from clld.lib.color import qualitative_colors
-from clld.scripts.util import initializedb, Data
+from clld.scripts.util import initializedb, Data, add_language_codes
 from clld_glottologfamily_plugin.util import load_families
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
-from clldutils.misc import slug
-from six import text_type
+from pycldf.dataset import Wordlist
 
 import numerals
 from numerals import models
@@ -24,7 +16,10 @@ GL_REPO = "/home/rzymski@shh.mpg.de/Repositories/glottolog/glottolog"
 
 
 def main(args):
+    print(args)
+
     data = Data()
+    channumerals = Wordlist.from_metadata("data/cldf/cldf-metadata.json")
 
     dataset = common.Dataset(
         id=numerals.__name__,
@@ -51,122 +46,61 @@ def main(args):
     DBSession.add(dataset)
 
     contrib = data.add(
-        common.Contribution, "numerals", id="numerals", name="Eugene Chan's numerals"
+        common.Contribution, "channumerals", id="channumerals", name="Eugene Chan's Numerals"
     )
 
-    header = [
-        "name",
-        "country",
-        "iso",
-        "glotto_name",
-        "glotto_code",
-        "lg_link",
-        "audio",
-        "source",
-        "nr_sets",
-        "variant",
-    ]
+    _ = data.add(common.Parameter, "0", id="0", name="Base")
 
-    meta = {}
+    # Languages
+    for language in channumerals["LanguageTable"]:
+        lang = data.add(models.Variety, language["ID"], id=language["ID"], name=language["Name"])
+        add_language_codes(data, lang, None, glottocode=language["Glottocode"])
 
-    for row in iter_sheet_rows("META", args.data_file("numeral_301216.xlsx")):
-        row = dict(zip(header, row))
-        meta[(row["lg_link"], row["variant"])] = row
-
-    basis_parameter = data.add(common.Parameter, "0", id="0", name="Base")
-
-    #  bases = Counter()
-    for key, items in groupby(
-        sorted(
-            iter_sheet_rows("NUMERAL", args.data_file("numeral_301216.xlsx")),
-            key=lambda r: (text_type(r[2]), text_type(r[3]), text_type(r[0])),
-        ),
-        lambda r: (r[2], int(r[3] or 1)),
-    ):
-        if key not in meta:
-            continue
-
-        lid = "{0}-{1}".format(*key)
-        md = meta[key]
-
-        if md["lg_link"] == "DangauraTharu.htm":
-            continue
-        elif md["lg_link"] == "LowSaxon-Twente.htm":
-            continue
-        elif md["lg_link"] == "LowSaxon.htm":
-            continue
-
+    # Parameters:
+    for parameter in channumerals["ParameterTable"]:
         data.add(
-            models.Variety, lid, id=my_slug(lid), name=md["name"], description=md["glotto_code"]
+            common.Parameter,
+            parameter["ID"],
+            id=parameter["ID"],
+            name="{0}".format(parameter["ID"]),
         )
-        # source, ref = sources.get(md['source']), None
-        # if source:
-        #     ds.add_sources(source)
-        #     ref = source.id
 
-        items_, basis = [], None
-        for concept, rows in groupby(items, lambda n: int(n[0])):
-            parameter = data["Parameter"].get(concept)
+    # Forms:
+    for form in channumerals["FormTable"]:
+        valueset_id = "{0}-{1}".format(form["Parameter_ID"], form["Language_ID"])
+        valueset = data["ValueSet"].get(valueset_id)
 
-            if not parameter:
-                parameter = data.add(
-                    common.Parameter, concept, id=slug(text_type(concept)), name=concept
-                )
-
-            vs_id = data["Variety"][lid].id + "-" + parameter.id
-
+        # Unless we already have something in the VS:
+        if not valueset:
             vs = data.add(
                 common.ValueSet,
-                vs_id,
-                id=vs_id,
-                language=data["Variety"][lid],
-                parameter=parameter,
+                valueset_id,
+                id=valueset_id,
+                language=data["Variety"][form["Language_ID"]],
+                parameter=data["Parameter"][form["Parameter_ID"]],
                 contribution=contrib,
-                # Comment=row[4] or None,
             )
 
-            for k, row in enumerate(rows):
-                if row[1]:
-                    if not basis:
-                        for item in items_:
-                            # Look for substring, if match is found base -1.
-                            if item in row[1]:
-                                basis = concept - 1
-                    items_.append(row[1])
-                    common.Value(id=vs_id + "-" + str(k), name=row[1], valueset=vs)
-        if basis:
-            basis = int(basis)
-            if basis <= 16:
-                de = data["DomainElement"].get(basis)
-                if not de:
-                    de = data.add(
-                        common.DomainElement,
-                        basis,
-                        id=text_type(basis),
-                        name=text_type(basis),
-                        parameter=basis_parameter,
-                    )
-                vs = data.add(
-                    common.ValueSet,
-                    data["Variety"][lid].id + "-p",
-                    id=data["Variety"][lid].id + "-p",
-                    language=data["Variety"][lid],
-                    parameter=basis_parameter,
-                    contribution=contrib,
-                    # Comment=row[4] or None,
-                )
-
-                common.Value(id=data["Variety"][lid].id + "-p", valueset=vs, domainelement=de)
+        DBSession.add(
+            models.NumberLexeme(
+                id=form["ID"],
+                name=form["Form"],
+                # comment=form.get("Comment"),
+                valueset=vs,
+            )
+        )
 
     load_families(
         Data(),
-        [(l.description, l) for l in DBSession.query(common.Language)],
+        [(l.glottocode, l) for l in DBSession.query(common.Language)],
         glottolog_repos=GL_REPO,
         strict=False,
     )
 
-    x = DBSession.query(models.Variety.family_pk).distinct().all()
-    families = dict(zip([r[0] for r in x], qualitative_colors(len(x))))
+    distinct_varieties = DBSession.query(models.Variety.family_pk).distinct().all()
+    families = dict(
+        zip([r[0] for r in distinct_varieties], qualitative_colors(len(distinct_varieties)))
+    )
 
     for l in DBSession.query(models.Variety):
         l.jsondata = {"color": families[l.family_pk]}
@@ -178,49 +112,23 @@ def main(args):
         de.jsondata = {"color": colors[i]}
 
 
-def iter_sheet_rows(sname, fname):
-    wb = xlrd.open_workbook(fname.as_posix())
-    sheet = wb.sheet_by_name(sname)
-
-    for i in range(sheet.nrows):
-        if i > 0:
-            yield [col.value for col in sheet.row(i)]
-
-
-def my_slug(s, remove_whitespace=True, lowercase=True):
-    res = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
-    if lowercase:
-        res = res.lower()
-    for c in string.punctuation:
-        if c == "-":
-            continue
-        else:
-            res = res.replace(c, "")
-    res = re.sub("\s+", "" if remove_whitespace else " ", res)
-    res = res.encode("ascii", "ignore").decode("ascii")
-    return res
-
-
-# noinspection PyUnusedLocal
 def prime_cache(args):
-    """If data needs to be denormalized for lookup, do that here.
-    This procedure should be separate from the db initialization, because
-    it will have to be run periodically whenever data has been updated.
-    """
+    print(args)
+
     DBSession.query(LanguageTreeLabel).delete()
     DBSession.query(TreeLabel).delete()
     DBSession.query(Phylogeny).delete()
 
     newick, _ = tree(
-        [l.description for l in DBSession.query(common.Language) if l.description], gl_repos=GL_REPO
+        [l.glottocode for l in DBSession.query(common.Language) if l.glottocode], gl_repos=GL_REPO
     )
 
     phylo = Phylogeny(id="phy", name="glottolog global tree", newick=newick)
 
     for l in DBSession.query(common.Language):
-        if l.description:
+        if l.glottocode:
             LanguageTreeLabel(
-                language=l, treelabel=TreeLabel(id=l.id, name=l.description, phylogeny=phylo)
+                language=l, treelabel=TreeLabel(id=l.id, name=l.glottocode, phylogeny=phylo)
             )
 
     DBSession.add(phylo)
