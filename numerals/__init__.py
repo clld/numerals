@@ -1,7 +1,7 @@
 from functools import partial
 
 from clld.interfaces import IMapMarker
-from clld.lib.svg import data_url, icon
+from clldutils import svg
 from clld.web.app import menu_item
 from clld.web.icon import MapMarker
 from pyramid.config import Configurator
@@ -17,7 +17,7 @@ class NumeralsMapMarker(MapMarker):
         if not color:
             return MapMarker.__call__(self, ctx, req)
 
-        return data_url(icon('c' + color))
+        return svg.data_url(svg.icon('c' + color))
 
 
 def _(s):
