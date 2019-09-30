@@ -5,6 +5,7 @@ from clld_glottologfamily_plugin.models import HasFamilyMixin
 from sqlalchemy import (
     Column,
     Integer,
+    Boolean,
     ForeignKey,
     Unicode
 )
@@ -36,9 +37,12 @@ def get_color(ctx):
 @implementer(interfaces.IValue)
 class NumberLexeme(CustomModelMixin, Value):
     pk = Column(Integer, ForeignKey('value.pk'), primary_key=True)
+    is_loan = Column(Boolean, default=False)
     comment = Column(Unicode)
 
 
 @implementer(interfaces.ILanguage)
 class Variety(CustomModelMixin, Language, HasFamilyMixin):
     pk = Column(Integer, ForeignKey('language.pk'), primary_key=True)
+    comment = Column(Unicode)
+
