@@ -1,8 +1,9 @@
 import sys
 
+from clldutils.path import Path
 from clld.db.meta import DBSession
 from clld.db.models import common
-from clld.lib.color import qualitative_colors
+from clldutils import color
 from clld.scripts.util import initializedb, Data, add_language_codes
 from clld_glottologfamily_plugin.util import load_families
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
@@ -12,14 +13,16 @@ import numerals
 from numerals import models
 from numerals.scripts.global_tree import tree
 
-GL_REPO = "/home/rzymski@shh.mpg.de/Repositories/glottolog/glottolog"
+gl_repos = Path(numerals.__file__).parent / '../..' / 'glottolog'
+data_file_path = Path(numerals.__file__).parent / '../..' / 'channumerals'
+
+ds = Wordlist.from_metadata(data_file_path / 'cldf' / 'cldf-metadata.json')
 
 
 def main(args):
     print(args)
 
     data = Data()
-    channumerals = Wordlist.from_metadata("data/cldf/cldf-metadata.json")
 
     dataset = common.Dataset(
         id=numerals.__name__,
@@ -51,13 +54,8 @@ def main(args):
 
     _ = data.add(common.Parameter, "0", id="0", name="Base")
 
-    # Languages
-    for language in channumerals["LanguageTable"]:
-        lang = data.add(models.Variety, language["ID"], id=language["ID"], name=language["Name"])
-        add_language_codes(data, lang, None, glottocode=language["Glottocode"])
-
     # Parameters:
-    for parameter in channumerals["ParameterTable"]:
+    for parameter in ds["ParameterTable"]:
         data.add(
             common.Parameter,
             parameter["ID"],
@@ -65,8 +63,39 @@ def main(args):
             name="{0}".format(parameter["ID"]),
         )
 
+    # Languages
+    for language in ds["LanguageTable"]:
+        lang = data.add(
+            models.Variety,
+            language["ID"],
+            id=language["ID"],
+            name=language["Name"])
+        add_language_codes(data, lang, None, glottocode=language["Glottocode"])
+
+        # Base info if given
+        if language["Base"]:
+            valueset_id = "0-{0}".format(language["ID"])
+            valueset = data["ValueSet"].get(valueset_id)
+            # Unless we already have something in the VS:
+            if not valueset:
+                vs = data.add(
+                    common.ValueSet,
+                    valueset_id,
+                    id=valueset_id,
+                    language=data["Variety"][language["ID"]],
+                    parameter=data["Parameter"]["0"],
+                    contribution=contrib,
+                )
+            DBSession.add(
+                models.NumberLexeme(
+                    id="{0}-0-1".format(language["ID"]),
+                    name=language["Base"],
+                    valueset=vs,
+                )
+            )
+
     # Forms:
-    for form in channumerals["FormTable"]:
+    for form in ds["FormTable"]:
         valueset_id = "{0}-{1}".format(form["Parameter_ID"], form["Language_ID"])
         valueset = data["ValueSet"].get(valueset_id)
 
@@ -85,7 +114,8 @@ def main(args):
             models.NumberLexeme(
                 id=form["ID"],
                 name=form["Form"],
-                # comment=form.get("Comment"),
+                comment=form["Comment"],
+                is_loan=form["Loan"],
                 valueset=vs,
             )
         )
@@ -93,20 +123,20 @@ def main(args):
     load_families(
         Data(),
         [(l.glottocode, l) for l in DBSession.query(common.Language)],
-        glottolog_repos=GL_REPO,
+        glottolog_repos=gl_repos,
         strict=False,
     )
 
     distinct_varieties = DBSession.query(models.Variety.family_pk).distinct().all()
     families = dict(
-        zip([r[0] for r in distinct_varieties], qualitative_colors(len(distinct_varieties)))
+        zip([r[0] for r in distinct_varieties], color.qualitative_colors(len(distinct_varieties)))
     )
 
     for l in DBSession.query(models.Variety):
         l.jsondata = {"color": families[l.family_pk]}
 
     p = common.Parameter.get("0")
-    colors = qualitative_colors(len(p.domain))
+    colors = color.qualitative_colors(len(p.domain))
 
     for i, de in enumerate(p.domain):
         de.jsondata = {"color": colors[i]}
@@ -120,7 +150,7 @@ def prime_cache(args):
     DBSession.query(Phylogeny).delete()
 
     newick, _ = tree(
-        [l.glottocode for l in DBSession.query(common.Language) if l.glottocode], gl_repos=GL_REPO
+        [l.glottocode for l in DBSession.query(common.Language) if l.glottocode], gl_repos=gl_repos
     )
 
     phylo = Phylogeny(id="phy", name="glottolog global tree", newick=newick)

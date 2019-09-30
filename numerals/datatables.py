@@ -7,7 +7,7 @@ from clld_glottologfamily_plugin.datatables import FamilyCol
 from sqlalchemy import Integer
 from sqlalchemy.sql.expression import cast
 
-from numerals.models import Variety
+from numerals.models import Variety, NumberLexeme
 from numerals.util import get_concepticon_link
 
 
@@ -74,12 +74,23 @@ class Datapoints(Values):
                     model_col=Language.name,
                     get_object=lambda i: i.valueset.language,
                 ),
-                ValueNameCol(self, "value"),
+                ValueNameCol(
+                    self,
+                    "value"
+                ),
                 NumeralValueCol(
                     self,
                     "parameter",
                     model_col=Parameter.id,
                     get_object=lambda i: i.valueset.parameter,
+                ),
+                Col(self,
+                    "comment",
+                    model_col=NumberLexeme.comment,
+                ),
+                Col(self,
+                    "is_loan",
+                    model_col=NumberLexeme.is_loan,
                 ),
                 LinkToMapCol(
                     self, "m", get_object=lambda i: i.valueset.language, sTitle="Map Link"
@@ -93,8 +104,19 @@ class Datapoints(Values):
                     model_col=Parameter.id,
                     get_object=lambda i: i.valueset.parameter,
                 ),
-                ValueNameCol(self, "value"),
-                NumeralsComment(self, "comment"),
+                ValueNameCol(
+                    self,
+                    "value",
+                    model_col=Parameter.id,
+                ),
+                Col(self,
+                    "comment",
+                    model_col=NumberLexeme.comment,
+                ),
+                Col(self,
+                    "is_loan",
+                    model_col=NumberLexeme.is_loan,
+                ),
             ]
 
 
