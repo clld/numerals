@@ -35,6 +35,7 @@ def main(global_config, **settings):
     config = Configurator(settings=settings)
     config.include('clldmpg')
     config.include('clld_phylogeny_plugin')
+    config.include('clld_cognacy_plugin')
     config.registry.registerUtility(NumeralsMapMarker(), IMapMarker)
     config.register_menu(
         ('dataset', partial(menu_item, 'dataset', label='Home')),

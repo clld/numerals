@@ -57,10 +57,11 @@ def main(args):
     # Parameters:
     for parameter in ds["ParameterTable"]:
         data.add(
-            common.Parameter,
+            models.NumberParameter,
             parameter["ID"],
             id=parameter["ID"],
             name="{0}".format(parameter["ID"]),
+            concepticon_id=parameter['Concepticon_ID'],
         )
 
     # Languages
@@ -106,7 +107,7 @@ def main(args):
                 valueset_id,
                 id=valueset_id,
                 language=data["Variety"][form["Language_ID"]],
-                parameter=data["Parameter"][form["Parameter_ID"]],
+                parameter=data["NumberParameter"][form["Parameter_ID"]],
                 contribution=contrib,
             )
 
