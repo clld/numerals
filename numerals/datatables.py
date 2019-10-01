@@ -1,4 +1,5 @@
-from clld.db.models.common import Language, Parameter, DomainElement
+from clld.db.models.common import Language, Parameter, DomainElement, Value
+from clld.db.util import icontains
 from clld.web.datatables.base import LinkCol, DetailsRowLinkCol, LinkToMapCol, Col
 from clld.web.datatables.language import Languages
 from clld.web.datatables.parameter import Parameters
@@ -10,6 +11,14 @@ from sqlalchemy import Integer
 from sqlalchemy.sql.expression import cast
 
 from numerals.models import Variety, NumberLexeme, NumberParameter
+
+
+class NumeralValueNameCol(ValueNameCol):
+    def order(self):
+        return Value.name
+
+    def search(self, qs):
+        return icontains(Value.name, qs)
 
 
 class NumeralParameterCol(LinkCol):
@@ -39,7 +48,12 @@ class NumberConcepticonCol(ConcepticonCol):
 
 class Varieties(Languages):
     def col_defs(self):
-        return Languages.col_defs(self) + [FamilyCol(self, "Family", Variety)]
+        return Languages.col_defs(self) + [
+            FamilyCol(
+                self,
+                "Family",
+                Variety
+            )]
 
 
 class Numerals(Parameters):
@@ -82,9 +96,9 @@ class Datapoints(Values):
                     model_col=Language.name,
                     get_object=lambda i: i.valueset.language,
                 ),
-                ValueNameCol(
+                NumeralValueNameCol(
                     self,
-                    "value"
+                    "value",
                 ),
                 NumeralValueCol(
                     self,
@@ -112,18 +126,17 @@ class Datapoints(Values):
                     model_col=Parameter.id,
                     get_object=lambda i: i.valueset.parameter,
                 ),
-                ValueNameCol(
+                NumeralValueNameCol(
                     self,
                     "value",
-                    model_col=Parameter.id,
-                ),
-                Col(self,
-                    "comment",
-                    model_col=NumberLexeme.comment,
                 ),
                 Col(self,
                     "is_loan",
                     model_col=NumberLexeme.is_loan,
+                ),
+                Col(self,
+                    "comment",
+                    model_col=NumberLexeme.comment,
                 ),
             ]
 
