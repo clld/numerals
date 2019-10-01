@@ -4,11 +4,12 @@ from clld.web.datatables.language import Languages
 from clld.web.datatables.parameter import Parameters
 from clld.web.datatables.value import Values, ValueNameCol
 from clld_glottologfamily_plugin.datatables import FamilyCol
+from clld_cognacy_plugin.datatables import ConcepticonCol
+from clld_cognacy_plugin.util import concepticon_link
 from sqlalchemy import Integer
 from sqlalchemy.sql.expression import cast
 
-from numerals.models import Variety, NumberLexeme
-from numerals.util import get_concepticon_link
+from numerals.models import Variety, NumberLexeme, NumberParameter
 
 
 class NumeralParameterCol(LinkCol):
@@ -27,19 +28,13 @@ class NumeralValueCol(LinkCol):
         return cast(Parameter.id, Integer)
 
 
-class NumeralsComment(Col):
-    # TODO: Placeholder, until Lexibank data is in place.
-    def col_defs(self):
-        return ""
-
-
-class ConcepticonCol(Col):
-    # TODO: Placeholder, until Lexibank data is in place.
+class NumberConcepticonCol(ConcepticonCol):
     __kw__ = {"bSearchable": False, "bSortable": False}
 
-    @staticmethod
-    def col_defs(self):
-        return ""
+    def format(self, item):
+        if not hasattr(item, 'concepticon_id'):
+            return ''
+        return concepticon_link(self.dt.req, item)
 
 
 class Varieties(Languages):
@@ -55,7 +50,20 @@ class Numerals(Parameters):
         return opts
 
     def col_defs(self):
-        return [NumeralParameterCol(self, "number"), ConcepticonCol(self, "concepticon")]
+        return [
+            NumeralParameterCol(
+                self,
+                "number",
+                model_col=Parameter.name,
+            ),
+            NumberConcepticonCol(
+                self,
+                "concepticon_id",
+                model_col=NumberParameter.concepticon_id,
+                sTitle='',
+                sWidth=40,
+            )
+        ]
 
 
 class Datapoints(Values):

@@ -1,6 +1,6 @@
 from clld import interfaces
 from clld.db.meta import CustomModelMixin
-from clld.db.models.common import Language, ValueSet, Value, DomainElement
+from clld.db.models.common import Language, ValueSet, Value, DomainElement, Parameter
 from clld_glottologfamily_plugin.models import HasFamilyMixin
 from sqlalchemy import (
     Column,
@@ -46,3 +46,6 @@ class Variety(CustomModelMixin, Language, HasFamilyMixin):
     pk = Column(Integer, ForeignKey('language.pk'), primary_key=True)
     comment = Column(Unicode)
 
+class NumberParameter(CustomModelMixin, Parameter):
+    pk = Column(Integer, ForeignKey('parameter.pk'), primary_key=True)
+    concepticon_id = Column(Integer)

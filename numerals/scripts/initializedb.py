@@ -8,6 +8,7 @@ from clld.scripts.util import initializedb, Data, add_language_codes
 from clld_glottologfamily_plugin.util import load_families
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
 from pycldf.dataset import Wordlist
+from six import text_type
 
 import numerals
 from numerals import models
@@ -52,16 +53,17 @@ def main(args):
         common.Contribution, "channumerals", id="channumerals", name="Eugene Chan's Numerals"
     )
 
-    _ = data.add(common.Parameter, "0", id="0", name="Base")
-
     # Parameters:
     for parameter in ds["ParameterTable"]:
         data.add(
-            common.Parameter,
+            models.NumberParameter,
             parameter["ID"],
             id=parameter["ID"],
             name="{0}".format(parameter["ID"]),
+            concepticon_id=parameter['Concepticon_ID'],
         )
+
+    basis_parameter = data.add(common.Parameter, "0", id="0", name="Base")
 
     # Languages
     for language in ds["LanguageTable"]:
@@ -74,25 +76,26 @@ def main(args):
 
         # Base info if given
         if language["Base"]:
-            valueset_id = "0-{0}".format(language["ID"])
-            valueset = data["ValueSet"].get(valueset_id)
-            # Unless we already have something in the VS:
-            if not valueset:
-                vs = data.add(
-                    common.ValueSet,
-                    valueset_id,
-                    id=valueset_id,
-                    language=data["Variety"][language["ID"]],
-                    parameter=data["Parameter"]["0"],
-                    contribution=contrib,
+            basis = language["Base"]
+            de = data["DomainElement"].get(basis)
+            if not de:
+                de = data.add(
+                    common.DomainElement,
+                    basis,
+                    id=text_type(basis),
+                    name=text_type(basis),
+                    parameter=basis_parameter,
                 )
-            DBSession.add(
-                models.NumberLexeme(
-                    id="{0}-0-1".format(language["ID"]),
-                    name=language["Base"],
-                    valueset=vs,
-                )
+            vs = data.add(
+                common.ValueSet,
+                data["Variety"][language["ID"]].id + "-p",
+                id=data["Variety"][language["ID"]].id + "-p",
+                language=data["Variety"][language["ID"]],
+                parameter=basis_parameter,
+                contribution=contrib,
             )
+
+            common.Value(id=data["Variety"][language["ID"]].id + "-p", valueset=vs, domainelement=de)
 
     # Forms:
     for form in ds["FormTable"]:
@@ -106,7 +109,7 @@ def main(args):
                 valueset_id,
                 id=valueset_id,
                 language=data["Variety"][form["Language_ID"]],
-                parameter=data["Parameter"][form["Parameter_ID"]],
+                parameter=data["NumberParameter"][form["Parameter_ID"]],
                 contribution=contrib,
             )
 
