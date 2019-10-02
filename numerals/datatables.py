@@ -13,6 +13,14 @@ from sqlalchemy.sql.expression import cast
 from numerals.models import Variety, NumberLexeme, NumberParameter
 
 
+class BoolCol(Col):
+    def format(self, item):
+        v = str(self.get_value(item))
+        if v == 'True':
+            return '<span style="display:block; text-align:center; margin:0 auto;">✓</span>'
+        return ''
+
+
 class NumeralValueNameCol(ValueNameCol):
     def order(self):
         return Value.name
@@ -115,12 +123,14 @@ class Datapoints(Values):
                     "comment",
                     model_col=NumberLexeme.comment,
                 ),
-                Col(self,
+                BoolCol(self,
                     "is_loan",
+                    sTitle="Loan?",
                     model_col=NumberLexeme.is_loan,
                 ),
-                Col(self,
+                BoolCol(self,
                     "is_problematic",
+                    sTitle="Problem?",
                     model_col=NumberLexeme.is_problematic,
                 ),
                 LinkToMapCol(
@@ -140,15 +150,17 @@ class Datapoints(Values):
                     "value",
                 ),
                 Col(self,
-                    "is_loan",
-                    model_col=NumberLexeme.is_loan,
-                ),
-                Col(self,
                     "comment",
                     model_col=NumberLexeme.comment,
                 ),
-                Col(self,
+                BoolCol(self,
+                    "is_loan",
+                    sTitle="Loan?",
+                    model_col=NumberLexeme.is_loan,
+                ),
+                BoolCol(self,
                     "is_problematic",
+                    sTitle="Problem?",
                     model_col=NumberLexeme.is_problematic,
                 ),
             ]
