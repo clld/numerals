@@ -71,7 +71,9 @@ def main(args):
             models.Variety,
             language["ID"],
             id=language["ID"],
-            name=language["Name"])
+            name=language["Name"],
+            contributor=language["Contributor"],
+        )
         add_language_codes(data, lang, None, glottocode=language["Glottocode"])
 
         # Base info if given
