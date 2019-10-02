@@ -10,10 +10,10 @@
 <div style="clear: right;">
     ${h.map_marker_img(request, value)}
     <strong>${value}</strong>
-    % if value.comment:
+    % if hasattr(value, 'comment') and value.comment:
       - ${value.comment}
     % endif
-    % if value.is_loan:
+    % if hasattr(value, 'is_loan') and value.is_loan:
       - ${_('is loan')}
     % endif
 </div>
