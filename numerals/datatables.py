@@ -47,6 +47,9 @@ class NumberConcepticonCol(ConcepticonCol):
 
 
 class Varieties(Languages):
+    def base_query(self, query):
+        return query.join(Variety.family)
+
     def col_defs(self):
         return Languages.col_defs(self) + [
             FamilyCol(
