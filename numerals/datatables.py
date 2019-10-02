@@ -56,7 +56,9 @@ class Varieties(Languages):
                 self,
                 "Family",
                 Variety
-            )]
+            ),
+            DetailsRowLinkCol(self, 'more'),
+        ]
 
 
 class Numerals(Parameters):

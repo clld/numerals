@@ -32,11 +32,4 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
         </%util:accordion_group>
         % endif
     </div>
-
-    <div class="well well-small">
-      % if ctx.contributor:
-      <b>${_('Contributor:')}</b><br />
-      ${ctx.contributor}
-      % endif
-    </div>
 </%def>
