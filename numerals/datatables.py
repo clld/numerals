@@ -119,6 +119,10 @@ class Datapoints(Values):
                     "is_loan",
                     model_col=NumberLexeme.is_loan,
                 ),
+                Col(self,
+                    "is_problematic",
+                    model_col=NumberLexeme.is_problematic,
+                ),
                 LinkToMapCol(
                     self, "m", get_object=lambda i: i.valueset.language, sTitle="Map Link"
                 ),
@@ -142,6 +146,10 @@ class Datapoints(Values):
                 Col(self,
                     "comment",
                     model_col=NumberLexeme.comment,
+                ),
+                Col(self,
+                    "is_problematic",
+                    model_col=NumberLexeme.is_problematic,
                 ),
             ]
 

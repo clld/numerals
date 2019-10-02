@@ -121,6 +121,7 @@ def main(args):
                 name=form["Form"],
                 comment=form["Comment"],
                 is_loan=form["Loan"],
+                is_problematic=form["Problematic"],
                 valueset=vs,
             )
         )
