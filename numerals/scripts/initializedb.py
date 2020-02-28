@@ -21,7 +21,6 @@ ds = Wordlist.from_metadata(data_file_path / 'cldf' / 'cldf-metadata.json')
 
 
 def main(args):
-    print(args)
 
     data = Data()
 
@@ -72,7 +71,7 @@ def main(args):
             language["ID"],
             id=language["ID"],
             name=language["Name"],
-            contributor=language["Contributor"],
+            creator=language["Contributor"],
         )
         add_language_codes(data, lang, None, glottocode=language["Glottocode"])
 
@@ -149,7 +148,6 @@ def main(args):
 
 
 def prime_cache(args):
-    print(args)
 
     DBSession.query(LanguageTreeLabel).delete()
     DBSession.query(TreeLabel).delete()

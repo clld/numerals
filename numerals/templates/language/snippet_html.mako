@@ -27,7 +27,7 @@
         % endif
     ${h.format_coordinates(ctx)}
 % else:
-    % if ctx.contributor:
-      <b>${_('Contributor:')}</b> ${ctx.contributor}
+    % if ctx.creator:
+      <b>${_('Contributor:')}</b> ${ctx.creator}
     % endif
 % endif

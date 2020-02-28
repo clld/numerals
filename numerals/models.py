@@ -45,7 +45,7 @@ class NumberLexeme(CustomModelMixin, Value):
 @implementer(interfaces.ILanguage)
 class Variety(CustomModelMixin, Language, HasFamilyMixin):
     pk = Column(Integer, ForeignKey('language.pk'), primary_key=True)
-    contributor = Column(Unicode)
+    creator = Column(Unicode)
 
 class NumberParameter(CustomModelMixin, Parameter):
     pk = Column(Integer, ForeignKey('parameter.pk'), primary_key=True)

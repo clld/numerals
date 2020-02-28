@@ -24,6 +24,10 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
 
     <div style="clear: right;"> </div>
 
+    <div class="well well-small">
+        Contributed by ${ctx.creator}
+    </div>
+
     <div class="accordion" id="sidebar-accordion">
         % if getattr(request, 'map', False):
         <%util:accordion_group eid="acc-map" parent="sidebar-accordion" title="Map" open="${True}">
