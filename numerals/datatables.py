@@ -1,4 +1,4 @@
-from clld.db.models.common import Language, Parameter, DomainElement, Value
+from clld.db.models.common import Language, Parameter, DomainElement, Value, Contribution, ValueSet
 from clld.db.util import icontains
 from clld.web.datatables.base import LinkCol, DetailsRowLinkCol, LinkToMapCol, Col
 from clld.web.datatables.language import Languages
@@ -94,6 +94,10 @@ class Numerals(Parameters):
 
 
 class Datapoints(Values):
+    def base_query(self, query):
+        query = Values.base_query(self, query)
+        return query.join(Value.valueset, ValueSet.contribution, ValueSet.language)
+
     def get_options(self):
         opts = super(Values, self).get_options()
         opts["aaSorting"] = [[0, "asc"], [1, "asc"]]
@@ -118,6 +122,11 @@ class Datapoints(Values):
                     "parameter",
                     model_col=Parameter.id,
                     get_object=lambda i: i.valueset.parameter,
+                ),
+                Col(self,
+                    "contribution",
+                    model_col=Contribution.name,
+                    get_object=lambda i: i.valueset.contribution,
                 ),
                 Col(self,
                     "comment",
@@ -152,6 +161,11 @@ class Datapoints(Values):
                 Col(self,
                     "comment",
                     model_col=NumberLexeme.comment,
+                ),
+                Col(self,
+                    "contribution",
+                    model_col=Contribution.name,
+                    get_object=lambda i: i.valueset.contribution,
                 ),
                 BoolCol(self,
                     "is_loan",

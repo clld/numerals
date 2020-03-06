@@ -46,6 +46,8 @@ class NumberLexeme(CustomModelMixin, Value):
 class Variety(CustomModelMixin, Language, HasFamilyMixin):
     pk = Column(Integer, ForeignKey('language.pk'), primary_key=True)
     creator = Column(Unicode)
+    comment = Column(Unicode)
+    url_soure_name = Column(Unicode)
 
 class NumberParameter(CustomModelMixin, Parameter):
     pk = Column(Integer, ForeignKey('parameter.pk'), primary_key=True)

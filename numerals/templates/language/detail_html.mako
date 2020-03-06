@@ -35,5 +35,10 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
             ${h.format_coordinates(ctx)}
         </%util:accordion_group>
         % endif
+        % if ctx.comment:
+        <%util:accordion_group eid="acc-com" parent="sidebar-accordion" title="Comment" open="${False}">
+            ${ctx.comment}
+        </%util:accordion_group>
+        % endif
     </div>
 </%def>
