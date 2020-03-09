@@ -39,12 +39,15 @@ class NumberLexeme(CustomModelMixin, Value):
     pk = Column(Integer, ForeignKey('value.pk'), primary_key=True)
     is_loan = Column(Boolean, default=False)
     comment = Column(Unicode)
+    is_problematic = Column(Boolean, default=False)
 
 
 @implementer(interfaces.ILanguage)
 class Variety(CustomModelMixin, Language, HasFamilyMixin):
     pk = Column(Integer, ForeignKey('language.pk'), primary_key=True)
+    creator = Column(Unicode)
     comment = Column(Unicode)
+    url_soure_name = Column(Unicode)
 
 class NumberParameter(CustomModelMixin, Parameter):
     pk = Column(Integer, ForeignKey('parameter.pk'), primary_key=True)

@@ -1,4 +1,4 @@
-from clld.db.models.common import Language, Parameter, DomainElement, Value
+from clld.db.models.common import Language, Parameter, DomainElement, Value, Contribution, ValueSet
 from clld.db.util import icontains
 from clld.web.datatables.base import LinkCol, DetailsRowLinkCol, LinkToMapCol, Col
 from clld.web.datatables.language import Languages
@@ -11,6 +11,14 @@ from sqlalchemy import Integer
 from sqlalchemy.sql.expression import cast
 
 from numerals.models import Variety, NumberLexeme, NumberParameter
+
+
+class BoolCol(Col):
+    def format(self, item):
+        v = str(self.get_value(item))
+        if v == 'True':
+            return '<span style="display:block; text-align:center; margin:0 auto;">✓</span>'
+        return ''
 
 
 class NumeralValueNameCol(ValueNameCol):
@@ -56,7 +64,9 @@ class Varieties(Languages):
                 self,
                 "Family",
                 Variety
-            )]
+            ),
+            DetailsRowLinkCol(self, 'more'),
+        ]
 
 
 class Numerals(Parameters):
@@ -84,6 +94,10 @@ class Numerals(Parameters):
 
 
 class Datapoints(Values):
+    def base_query(self, query):
+        query = Values.base_query(self, query)
+        return query.join(Value.valueset, ValueSet.contribution, ValueSet.language)
+
     def get_options(self):
         opts = super(Values, self).get_options()
         opts["aaSorting"] = [[0, "asc"], [1, "asc"]]
@@ -110,12 +124,23 @@ class Datapoints(Values):
                     get_object=lambda i: i.valueset.parameter,
                 ),
                 Col(self,
+                    "contribution",
+                    model_col=Contribution.name,
+                    get_object=lambda i: i.valueset.contribution,
+                ),
+                Col(self,
                     "comment",
                     model_col=NumberLexeme.comment,
                 ),
-                Col(self,
+                BoolCol(self,
                     "is_loan",
+                    sTitle="Loan?",
                     model_col=NumberLexeme.is_loan,
+                ),
+                BoolCol(self,
+                    "is_problematic",
+                    sTitle="Problem?",
+                    model_col=NumberLexeme.is_problematic,
                 ),
                 LinkToMapCol(
                     self, "m", get_object=lambda i: i.valueset.language, sTitle="Map Link"
@@ -134,12 +159,23 @@ class Datapoints(Values):
                     "value",
                 ),
                 Col(self,
-                    "is_loan",
-                    model_col=NumberLexeme.is_loan,
-                ),
-                Col(self,
                     "comment",
                     model_col=NumberLexeme.comment,
+                ),
+                Col(self,
+                    "contribution",
+                    model_col=Contribution.name,
+                    get_object=lambda i: i.valueset.contribution,
+                ),
+                BoolCol(self,
+                    "is_loan",
+                    sTitle="Loan?",
+                    model_col=NumberLexeme.is_loan,
+                ),
+                BoolCol(self,
+                    "is_problematic",
+                    sTitle="Problem?",
+                    model_col=NumberLexeme.is_problematic,
                 ),
             ]
 

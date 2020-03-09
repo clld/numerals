@@ -24,11 +24,20 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
 
     <div style="clear: right;"> </div>
 
+    <div class="well well-small">
+        Contributed by ${ctx.creator}
+    </div>
+
     <div class="accordion" id="sidebar-accordion">
         % if getattr(request, 'map', False):
         <%util:accordion_group eid="acc-map" parent="sidebar-accordion" title="Map" open="${True}">
             ${request.map.render()}
             ${h.format_coordinates(ctx)}
+        </%util:accordion_group>
+        % endif
+        % if ctx.comment:
+        <%util:accordion_group eid="acc-com" parent="sidebar-accordion" title="Comment" open="${False}">
+            ${ctx.comment}
         </%util:accordion_group>
         % endif
     </div>

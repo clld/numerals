@@ -15,13 +15,21 @@ from numerals import models
 from numerals.scripts.global_tree import tree
 
 gl_repos = Path(numerals.__file__).parent / '../..' / 'glottolog'
-data_file_path = Path(numerals.__file__).parent / '../..' / 'channumerals'
-
-ds = Wordlist.from_metadata(data_file_path / 'cldf' / 'cldf-metadata.json')
+data_repos = [
+    {
+        'data_path': Path(numerals.__file__).parent / '../..' / 'channumerals',
+        'id': 'channumerals',
+        'name': "Chan's Numerals",
+    },
+    {
+        'data_path': Path(numerals.__file__).parent / '../..' / 'numerals_d',
+        'id': 'channumerals_curated',
+        'name': "Chan's Numerals (curated)",
+    },
+]
 
 
 def main(args):
-    print(args)
 
     data = Data()
 
@@ -49,10 +57,8 @@ def main(args):
 
     DBSession.add(dataset)
 
-    contrib = data.add(
-        common.Contribution, "channumerals", id="channumerals", name="Eugene Chan's Numerals"
-    )
-
+    # Take meta data from curated CLDF data set
+    ds = Wordlist.from_metadata(data_repos[1]['data_path'] / 'cldf' / 'cldf-metadata.json')
     # Parameters:
     for parameter in ds["ParameterTable"]:
         data.add(
@@ -63,65 +69,86 @@ def main(args):
             concepticon_id=parameter['Concepticon_ID'],
         )
 
-    basis_parameter = data.add(common.Parameter, "0", id="0", name="Base")
-
-    # Languages
     for language in ds["LanguageTable"]:
         lang = data.add(
             models.Variety,
             language["ID"],
             id=language["ID"],
-            name=language["Name"])
+            name=language["Name"],
+            creator=language["Contributor"],
+            comment=language["Comment"],
+            url_soure_name=language["SourceFile"],
+        )
         add_language_codes(data, lang, None, glottocode=language["Glottocode"])
 
-        # Base info if given
-        if language["Base"]:
-            basis = language["Base"]
-            de = data["DomainElement"].get(basis)
-            if not de:
-                de = data.add(
-                    common.DomainElement,
-                    basis,
-                    id=text_type(basis),
-                    name=text_type(basis),
-                    parameter=basis_parameter,
-                )
-            vs = data.add(
-                common.ValueSet,
-                data["Variety"][language["ID"]].id + "-p",
-                id=data["Variety"][language["ID"]].id + "-p",
-                language=data["Variety"][language["ID"]],
-                parameter=basis_parameter,
-                contribution=contrib,
-            )
+    basis_parameter = data.add(common.Parameter, "0", id="0", name="Base")
 
-            common.Value(id=data["Variety"][language["ID"]].id + "-p", valueset=vs, domainelement=de)
+    for c_id, d in enumerate(data_repos):
 
-    # Forms:
-    for form in ds["FormTable"]:
-        valueset_id = "{0}-{1}".format(form["Parameter_ID"], form["Language_ID"])
-        valueset = data["ValueSet"].get(valueset_id)
+        ds = Wordlist.from_metadata(d['data_path'] / 'cldf' / 'cldf-metadata.json')
 
-        # Unless we already have something in the VS:
-        if not valueset:
-            vs = data.add(
-                common.ValueSet,
-                valueset_id,
-                id=valueset_id,
-                language=data["Variety"][form["Language_ID"]],
-                parameter=data["NumberParameter"][form["Parameter_ID"]],
-                contribution=contrib,
-            )
-
-        DBSession.add(
-            models.NumberLexeme(
-                id=form["ID"],
-                name=form["Form"],
-                comment=form["Comment"],
-                is_loan=form["Loan"],
-                valueset=vs,
-            )
+        contrib = data.add(
+            common.Contribution,
+            d['id'],
+            id=d['id'],
+            name=d['name']
         )
+        c_id += 1
+
+        # Add Base info if given
+        for language in ds["LanguageTable"]:
+            if language["Base"]:
+                basis = language["Base"]
+                de = data["DomainElement"].get(basis)
+                if not de:
+                    de = data.add(
+                        common.DomainElement,
+                        basis,
+                        id=text_type(basis),
+                        name=text_type(basis),
+                        parameter=basis_parameter,
+                    )
+                vs = data.add(
+                    common.ValueSet,
+                    "{0}-{1}".format(data["Variety"][language["ID"]].id, c_id),
+                    id="{0}-{1}".format(data["Variety"][language["ID"]].id, c_id),
+                    language=data["Variety"][language["ID"]],
+                    parameter=basis_parameter,
+                    contribution=contrib,
+                )
+
+                common.Value(
+                    id="{0}-{1}".format(data["Variety"][language["ID"]].id, c_id),
+                    valueset=vs,
+                    domainelement=de
+                )
+
+        # Forms:
+        for form in ds["FormTable"]:
+            valueset_id = "{0}-{1}-{2}".format(form["Parameter_ID"], form["Language_ID"], c_id)
+            valueset = data["ValueSet"].get(valueset_id)
+
+            # Unless we already have something in the VS:
+            if not valueset:
+                vs = data.add(
+                    common.ValueSet,
+                    valueset_id,
+                    id=valueset_id,
+                    language=data["Variety"][form["Language_ID"]],
+                    parameter=data["NumberParameter"][form["Parameter_ID"]],
+                    contribution=contrib,
+                )
+
+            DBSession.add(
+                models.NumberLexeme(
+                    id="{0}-{1}".format(form["ID"], c_id),
+                    name=form["Form"],
+                    comment=form["Comment"],
+                    is_loan=form["Loan"],
+                    is_problematic=form["Problematic"],
+                    valueset=vs,
+                )
+            )
 
     load_families(
         Data(),
@@ -146,7 +173,6 @@ def main(args):
 
 
 def prime_cache(args):
-    print(args)
 
     DBSession.query(LanguageTreeLabel).delete()
     DBSession.query(TreeLabel).delete()
