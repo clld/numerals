@@ -26,7 +26,10 @@ class NumeralValueNameCol(ValueNameCol):
         return Value.name
 
     def search(self, qs):
-        return icontains(Value.name, qs)
+        if self.dt.parameter and self.dt.parameter.name == 'Base':
+            return icontains(DomainElement.name, qs)
+        else:
+            return icontains(Value.name, qs)
 
 
 class NumeralParameterCol(LinkCol):
@@ -96,7 +99,11 @@ class Numerals(Parameters):
 class Datapoints(Values):
     def base_query(self, query):
         query = Values.base_query(self, query)
-        return query.join(Value.valueset, ValueSet.contribution, ValueSet.language)
+        return query.join(
+            ValueSet.parameter,
+            Value.valueset,
+            ValueSet.contribution,
+            ValueSet.language)
 
     def get_options(self):
         opts = super(Values, self).get_options()
@@ -120,7 +127,7 @@ class Datapoints(Values):
                 NumeralValueCol(
                     self,
                     "parameter",
-                    model_col=Parameter.id,
+                    model_col=Parameter.name,
                     get_object=lambda i: i.valueset.parameter,
                 ),
                 Col(self,
@@ -151,7 +158,7 @@ class Datapoints(Values):
                 NumeralValueCol(
                     self,
                     "parameter",
-                    model_col=Parameter.id,
+                    model_col=Parameter.name,
                     get_object=lambda i: i.valueset.parameter,
                 ),
                 NumeralValueNameCol(
