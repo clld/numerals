@@ -130,14 +130,15 @@ def main(args):
 
             # Unless we already have something in the VS:
             if not valueset:
-                vs = data.add(
-                    common.ValueSet,
-                    valueset_id,
-                    id=valueset_id,
-                    language=data["Variety"][form["Language_ID"]],
-                    parameter=data["NumberParameter"][form["Parameter_ID"]],
-                    contribution=contrib,
-                )
+                if form["Language_ID"] in data["Variety"]:
+                    vs = data.add(
+                        common.ValueSet,
+                        valueset_id,
+                        id=valueset_id,
+                        language=data["Variety"][form["Language_ID"]],
+                        parameter=data["NumberParameter"][form["Parameter_ID"]],
+                        contribution=contrib,
+                    )
 
             DBSession.add(
                 models.NumberLexeme(
