@@ -1,6 +1,7 @@
 import ete3
 from clld import interfaces
 from clld.web.adapters.cldf import CldfConfig
+from clld.web.adapters.geojson import GeoJsonLanguages
 from clld_phylogeny_plugin.interfaces import ITree
 from clld_phylogeny_plugin.tree import Tree
 from clldutils.misc import lazyproperty
@@ -58,7 +59,14 @@ class NumeralbankTree(Tree):
         return 'c', get_color(valueset)
 
 
+class NumeralGeoJsonLanguages(GeoJsonLanguages):
+    def feature_iterator(self, ctx, req):
+        return ctx.get_query(limit=10000)
+
+
 def includeme(config):
     config.registry.registerUtility(NumeralsCldfConfig(),
                                     interfaces.ICldfConfig)
     config.registry.registerUtility(NumeralbankTree, ITree)
+    config.register_adapter(NumeralGeoJsonLanguages,
+                            interfaces.ILanguage)
