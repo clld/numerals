@@ -5,6 +5,7 @@ from clld.web.datatables.language import Languages
 from clld.web.datatables.parameter import Parameters
 from clld.web.datatables.value import Values, ValueNameCol
 from clld_glottologfamily_plugin.datatables import FamilyCol
+from clld_glottologfamily_plugin.models import Family
 from clld_cognacy_plugin.datatables import ConcepticonCol
 from clld_cognacy_plugin.util import concepticon_link
 from sqlalchemy import Integer
@@ -103,7 +104,8 @@ class Datapoints(Values):
             ValueSet.parameter,
             Value.valueset,
             ValueSet.contribution,
-            ValueSet.language)
+            ValueSet.language,
+            Family)
 
     def get_options(self):
         opts = super(Values, self).get_options()
@@ -120,15 +122,15 @@ class Datapoints(Values):
                     model_col=Language.name,
                     get_object=lambda i: i.valueset.language,
                 ),
+                FamilyCol(
+                    self,
+                    "Family",
+                    Variety,
+                    get_object=lambda i: i.valueset.language
+                ),
                 NumeralValueNameCol(
                     self,
                     "value",
-                ),
-                NumeralValueCol(
-                    self,
-                    "parameter",
-                    model_col=Parameter.name,
-                    get_object=lambda i: i.valueset.parameter,
                 ),
                 Col(self,
                     "contribution",
