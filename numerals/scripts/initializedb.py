@@ -146,6 +146,7 @@ def main(args):
                     name=form["Form"],
                     comment=form["Comment"],
                     is_loan=form["Loan"],
+                    other_form=form["Other_Form"],
                     is_problematic=form["Problematic"],
                     valueset=vs,
                 )

@@ -38,6 +38,7 @@ def get_color(ctx):
 class NumberLexeme(CustomModelMixin, Value):
     pk = Column(Integer, ForeignKey('value.pk'), primary_key=True)
     is_loan = Column(Boolean, default=False)
+    other_form = Column(Unicode)
     comment = Column(Unicode)
     is_problematic = Column(Boolean, default=False)
 
