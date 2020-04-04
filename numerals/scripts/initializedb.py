@@ -69,6 +69,7 @@ def main(args):
             concepticon_id=parameter['Concepticon_ID'],
         )
 
+    load_family_langs = []
     for language in ds["LanguageTable"]:
         lang = data.add(
             models.Variety,
@@ -79,7 +80,8 @@ def main(args):
             comment=language["Comment"],
             url_soure_name=language["SourceFile"],
         )
-        add_language_codes(data, lang, None, glottocode=language["Glottocode"])
+        if language["Glottocode"]:
+            load_family_langs.append((language["Glottocode"], lang))
 
     basis_parameter = data.add(common.Parameter, "0", id="0", name="Base")
 
@@ -154,7 +156,7 @@ def main(args):
 
     load_families(
         Data(),
-        [(l.glottocode, l) for l in DBSession.query(common.Language)],
+        load_family_langs,
         glottolog_repos=gl_repos,
         strict=False,
     )
@@ -180,17 +182,18 @@ def prime_cache(args):
     DBSession.query(TreeLabel).delete()
     DBSession.query(Phylogeny).delete()
 
+    langs = [l for l in DBSession.query(common.Language) if l.glottocode]
+
     newick, _ = tree(
-        [l.glottocode for l in DBSession.query(common.Language) if l.glottocode], gl_repos=gl_repos
+        [l.glottocode for l in langs], gl_repos=gl_repos
     )
 
     phylo = Phylogeny(id="phy", name="glottolog global tree", newick=newick)
 
-    for l in DBSession.query(common.Language):
-        if l.glottocode:
-            LanguageTreeLabel(
-                language=l, treelabel=TreeLabel(id=l.id, name=l.glottocode, phylogeny=phylo)
-            )
+    for l in langs:
+        LanguageTreeLabel(
+            language=l, treelabel=TreeLabel(id=l.id, name=l.glottocode, phylogeny=phylo)
+        )
 
     DBSession.add(phylo)
 
