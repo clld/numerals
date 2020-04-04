@@ -20,13 +20,11 @@ class NumeralsMapMarker(MapMarker):
         return svg.data_url(svg.icon('c' + color))
 
 
-def _(s):
-    return s
-
-
-_('Language')
-_('Languages')
-
+_ = lambda s: s
+_('Parameter')
+_('Parameters')
+_('Phylogeny')
+_('Phylogenys')
 
 # noinspection PyUnusedLocal
 def main(global_config, **settings):
@@ -37,14 +35,4 @@ def main(global_config, **settings):
     config.include('clld_phylogeny_plugin')
     config.include('clld_cognacy_plugin')
     config.registry.registerUtility(NumeralsMapMarker(), IMapMarker)
-    config.register_menu(
-        ('dataset', partial(menu_item, 'dataset', label='Home')),
-        ('contributions',
-         partial(menu_item, 'contributions', label='Contributions')),
-        ('parameters', partial(menu_item, 'parameters', label='Numerals')),
-        ('languages', partial(menu_item, 'languages', label='Languages')),
-        ('contributors',
-         partial(menu_item, 'contributors', label='Contributors')),
-        ('phylogenys', partial(menu_item, 'phylogenys', label='Phylogenies'))
-    )
     return config.make_wsgi_app()
