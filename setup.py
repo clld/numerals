@@ -18,7 +18,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'clld>=4.1.2',
+        'clld>=6.0.1',
         'clldmpg>=3.1.1',
         'clld-glottologfamily-plugin',
         'clld-phylogeny-plugin>=1.1.0',
