@@ -1,5 +1,5 @@
 import sys
-
+import unicodedata
 from clldutils.path import Path
 from clld.db.meta import DBSession
 from clld.db.models import common
@@ -69,92 +69,106 @@ def main(args):
             concepticon_id=parameter['Concepticon_ID'],
         )
 
+    load_family_langs = []
     for language in ds["LanguageTable"]:
         lang = data.add(
             models.Variety,
             language["ID"],
             id=language["ID"],
             name=language["Name"],
+            latitude=language["Latitude"],
+            longitude=language["Longitude"],
             creator=language["Contributor"],
             comment=language["Comment"],
             url_soure_name=language["SourceFile"],
         )
-        add_language_codes(data, lang, None, glottocode=language["Glottocode"])
+        if language["Glottocode"]:
+            load_family_langs.append((language["Glottocode"], lang))
 
     basis_parameter = data.add(common.Parameter, "0", id="0", name="Base")
 
-    for c_id, d in enumerate(data_repos):
+    # get orginal forms
+    ds = Wordlist.from_metadata(data_repos[0]['data_path'] / 'cldf' / 'cldf-metadata.json')
+    org_forms = {f["ID"]: f for f in ds["FormTable"]}
 
-        ds = Wordlist.from_metadata(d['data_path'] / 'cldf' / 'cldf-metadata.json')
+    d = data_repos[1]
+    contrib = data.add(
+        common.Contribution,
+        d['id'],
+        id=d['id'],
+        name=d['name']
+    )
 
-        contrib = data.add(
-            common.Contribution,
-            d['id'],
-            id=d['id'],
-            name=d['name']
-        )
-        c_id += 1
+    # process curated forms
+    ds = Wordlist.from_metadata(data_repos[1]['data_path'] / 'cldf' / 'cldf-metadata.json')
 
-        # Add Base info if given
-        for language in ds["LanguageTable"]:
-            if language["Base"]:
-                basis = language["Base"]
-                de = data["DomainElement"].get(basis)
-                if not de:
-                    de = data.add(
-                        common.DomainElement,
-                        basis,
-                        id=text_type(basis),
-                        name=text_type(basis),
-                        parameter=basis_parameter,
-                    )
+    # Add Base info if given
+    for language in ds["LanguageTable"]:
+        if language["Base"]:
+            basis = language["Base"]
+            de = data["DomainElement"].get(basis)
+            if not de:
+                de = data.add(
+                    common.DomainElement,
+                    basis,
+                    id=text_type(basis),
+                    name=text_type(basis),
+                    parameter=basis_parameter,
+                )
+            vs = data.add(
+                common.ValueSet,
+                data["Variety"][language["ID"]].id,
+                id=data["Variety"][language["ID"]].id,
+                language=data["Variety"][language["ID"]],
+                parameter=basis_parameter,
+                contribution=contrib,
+            )
+
+            common.Value(
+                id=data["Variety"][language["ID"]].id,
+                valueset=vs,
+                domainelement=de
+            )
+
+    # Forms:
+    for form in ds["FormTable"]:
+        valueset_id = "{0}-{1}".format(form["Parameter_ID"], form["Language_ID"])
+        valueset = data["ValueSet"].get(valueset_id)
+
+        # Unless we already have something in the VS:
+        if not valueset:
+            if form["Language_ID"] in data["Variety"]:
                 vs = data.add(
                     common.ValueSet,
-                    "{0}-{1}".format(data["Variety"][language["ID"]].id, c_id),
-                    id="{0}-{1}".format(data["Variety"][language["ID"]].id, c_id),
-                    language=data["Variety"][language["ID"]],
-                    parameter=basis_parameter,
+                    valueset_id,
+                    id=valueset_id,
+                    language=data["Variety"][form["Language_ID"]],
+                    parameter=data["NumberParameter"][form["Parameter_ID"]],
                     contribution=contrib,
                 )
 
-                common.Value(
-                    id="{0}-{1}".format(data["Variety"][language["ID"]].id, c_id),
-                    valueset=vs,
-                    domainelement=de
-                )
-
-        # Forms:
-        for form in ds["FormTable"]:
-            valueset_id = "{0}-{1}-{2}".format(form["Parameter_ID"], form["Language_ID"], c_id)
-            valueset = data["ValueSet"].get(valueset_id)
-
-            # Unless we already have something in the VS:
-            if not valueset:
-                if form["Language_ID"] in data["Variety"]:
-                    vs = data.add(
-                        common.ValueSet,
-                        valueset_id,
-                        id=valueset_id,
-                        language=data["Variety"][form["Language_ID"]],
-                        parameter=data["NumberParameter"][form["Parameter_ID"]],
-                        contribution=contrib,
-                    )
-
-            DBSession.add(
-                models.NumberLexeme(
-                    id="{0}-{1}".format(form["ID"], c_id),
-                    name=form["Form"],
-                    comment=form["Comment"],
-                    is_loan=form["Loan"],
-                    other_form=form["Other_Form"],
-                    is_problematic=form["Problematic"],
-                    valueset=vs,
-                )
+        org_form = ""
+        if form["ID"] in org_forms:
+            if unicodedata.normalize('NFC', org_forms[form["ID"]]["Form"].strip()) != form["Form"]:
+                org_form = org_forms[form["ID"]]["Form"]
+        else:
+            org_form = "no original form"
+        DBSession.add(
+            models.NumberLexeme(
+                id=form["ID"],
+                name=form["Form"],
+                comment=form["Comment"],
+                is_loan=form["Loan"],
+                other_form=form["Other_Form"],
+                org_form=org_form,
+                is_problematic=form["Problematic"],
+                valueset=vs,
             )
+        )
 
     load_families(
         Data(),
-        [(l.glottocode, l) for l in DBSession.query(common.Language)],
+        load_family_langs,
         glottolog_repos=gl_repos,
         strict=False,
     )
@@ -180,17 +194,18 @@ def prime_cache(args):
     DBSession.query(TreeLabel).delete()
     DBSession.query(Phylogeny).delete()
 
+    langs = [l for l in DBSession.query(common.Language) if l.glottocode]
+
     newick, _ = tree(
-        [l.glottocode for l in DBSession.query(common.Language) if l.glottocode], gl_repos=gl_repos
+        [l.glottocode for l in langs], gl_repos=gl_repos
     )
 
     phylo = Phylogeny(id="phy", name="glottolog global tree", newick=newick)
 
-    for l in DBSession.query(common.Language):
-        if l.glottocode:
-            LanguageTreeLabel(
-                language=l, treelabel=TreeLabel(id=l.id, name=l.glottocode, phylogeny=phylo)
-            )
+    for l in langs:
+        LanguageTreeLabel(
+            language=l, treelabel=TreeLabel(id=l.id, name=l.glottocode, phylogeny=phylo)
+        )
 
     DBSession.add(phylo)
 
