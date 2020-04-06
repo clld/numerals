@@ -1,14 +1,17 @@
-from clld.db.models.common import Language, Parameter, DomainElement, Value, Contribution, ValueSet
+from clld.db.models.common import (Language, Parameter, DomainElement, Value, Contribution,
+    ValueSet, Identifier, LanguageIdentifier, IdentifierType)
 from clld.db.util import icontains
 from clld.web.datatables.base import LinkCol, DetailsRowLinkCol, LinkToMapCol, Col
 from clld.web.datatables.language import Languages
 from clld.web.datatables.parameter import Parameters
 from clld.web.datatables.value import Values, ValueNameCol
+from clld.web.util.glottolog import url
+from clld.web.util.helpers import external_link
 from clld_glottologfamily_plugin.datatables import FamilyCol
 from clld_glottologfamily_plugin.models import Family
 from clld_cognacy_plugin.datatables import ConcepticonCol
 from clld_cognacy_plugin.util import concepticon_link
-from sqlalchemy import Integer
+from sqlalchemy import Integer, and_
 from sqlalchemy.sql.expression import cast
 
 from numerals.models import Variety, NumberLexeme, NumberParameter
@@ -20,6 +23,35 @@ class BoolCol(Col):
         if v == 'True':
             return '<span style="display:block; text-align:center; margin:0 auto;">✓</span>'
         return ''
+
+
+class NumeralGlottocodeCol(Col):
+    __kw__ = {"bSortable": False}
+
+    def format(self, item):
+        if item.glottocode:
+            return external_link(
+                        url=url(item.glottocode),
+                        label=item.glottocode,
+                        title="View languoid {0} at Glottolog".format(item.glottocode),
+                        target="_new")
+        else:
+            return ""
+
+    def search(self, qs):
+        return and_(Identifier.type.__eq__(IdentifierType.glottolog.value),
+                    icontains(Identifier.name, qs))
+
+
+class NumeralISOCol(Col):
+    __kw__ = {"bSortable": False}
+
+    def format(self, item):
+        return item.iso_code
+
+    def search(self, qs):
+        return and_(Identifier.type.__eq__(IdentifierType.iso.value),
+                    icontains(Identifier.name, qs))
 
 
 class NumeralValueNameCol(ValueNameCol):
@@ -60,10 +92,38 @@ class NumberConcepticonCol(ConcepticonCol):
 
 class Varieties(Languages):
     def base_query(self, query):
-        return query.join(Variety.family, isouter=True)
+        return query.distinct().join(Variety.family, isouter=True)\
+            .join(*Variety.identifiers.attr, isouter=True)
 
     def col_defs(self):
-        return Languages.col_defs(self) + [
+        return [
+            LinkCol(
+                self,
+                'name'
+            ),
+            LinkToMapCol(
+                self,
+                'm'
+            ),
+            NumeralGlottocodeCol(
+                self,
+                'Glottocode'
+            ),
+            NumeralISOCol(
+                self,
+                'ISO',
+                sTitle='ISO 639-3'
+            ),
+            Col(
+                self,
+                'latitude',
+                sDescription='<small>The geographic latitude</small>'
+            ),
+            Col(
+                self,
+                'longitude',
+                sDescription='<small>The geographic longitude</small>'
+            ),
             FamilyCol(
                 self,
                 "Family",
@@ -105,7 +165,7 @@ class Datapoints(Values):
             Value.valueset,
             ValueSet.contribution,
             ValueSet.language,
-            Family)
+            ).join(Family, isouter=True)
 
     def get_options(self):
         opts = super(Values, self).get_options()
@@ -130,12 +190,12 @@ class Datapoints(Values):
                 ),
                 NumeralValueNameCol(
                     self,
-                    "value",
+                    "form",
+                    model_col=Value.name,
                 ),
                 Col(self,
-                    "contribution",
-                    model_col=Contribution.name,
-                    get_object=lambda i: i.valueset.contribution,
+                    "other_form",
+                    model_col=NumberLexeme.other_form,
                 ),
                 Col(self,
                     "comment",
@@ -165,16 +225,16 @@ class Datapoints(Values):
                 ),
                 NumeralValueNameCol(
                     self,
-                    "value",
+                    "form",
+                    model_col=Value.name
+                ),
+                Col(self,
+                    "other_form",
+                    model_col=NumberLexeme.other_form,
                 ),
                 Col(self,
                     "comment",
                     model_col=NumberLexeme.comment,
-                ),
-                Col(self,
-                    "contribution",
-                    model_col=Contribution.name,
-                    get_object=lambda i: i.valueset.contribution,
                 ),
                 BoolCol(self,
                     "is_loan",
