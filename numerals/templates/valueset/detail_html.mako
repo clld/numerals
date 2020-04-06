@@ -10,11 +10,17 @@
 <div style="clear: right;">
     ${h.map_marker_img(request, value)}
     <strong>${value}</strong>
-    % if hasattr(value, 'comment') and value.comment:
+    % if value.other_form:
+      - ${value.other_form}
+    % endif
+    % if value.comment:
       - ${value.comment}
     % endif
-    % if hasattr(value, 'is_loan') and value.is_loan:
+    % if value.is_loan:
       - ${_('is loan')}
+    % endif
+    % if value.org_form:
+      - [<i>${_('original form')}: ${value.org_form}</i>]
     % endif
 </div>
 % endfor

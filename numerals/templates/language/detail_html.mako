@@ -35,9 +35,18 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
             ${h.format_coordinates(ctx)}
         </%util:accordion_group>
         % endif
-        % if ctx.comment:
+        % if ctx.comment or ctx.url_soure_name:
         <%util:accordion_group eid="acc-com" parent="sidebar-accordion" title="Comment" open="${False}">
-            ${ctx.comment}
+            % if ctx.comment:
+                ${ctx.comment}
+            % endif
+            % if ctx.url_soure_name:
+                <br />
+                ${h.external_link(
+                  url="https://mpi-lingweb.shh.mpg.de/numeral/{0}".format(ctx.url_soure_name),
+                  label="Link to source site",
+                  target="_new")}
+            % endif
         </%util:accordion_group>
         % endif
     </div>
