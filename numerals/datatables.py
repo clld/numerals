@@ -206,11 +206,6 @@ class Datapoints(Values):
                     sTitle="Loan?",
                     model_col=NumberLexeme.is_loan,
                 ),
-                BoolCol(self,
-                    "is_problematic",
-                    sTitle="Problem?",
-                    model_col=NumberLexeme.is_problematic,
-                ),
                 LinkToMapCol(
                     self, "m", get_object=lambda i: i.valueset.language, sTitle="Map Link"
                 ),
@@ -240,11 +235,6 @@ class Datapoints(Values):
                     "is_loan",
                     sTitle="Loan?",
                     model_col=NumberLexeme.is_loan,
-                ),
-                BoolCol(self,
-                    "is_problematic",
-                    sTitle="Problem?",
-                    model_col=NumberLexeme.is_problematic,
                 ),
             ]
 
