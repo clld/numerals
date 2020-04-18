@@ -35,6 +35,12 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
             ${h.format_coordinates(ctx)}
         </%util:accordion_group>
         % endif
+        <% v, t = u.get_variety_links(request, ctx) %>
+        % if v:
+          <%util:accordion_group eid="acc-var" parent="sidebar-accordion" title="${t}" open="${False}">
+            ${v}
+          </%util:accordion_group>
+        % endif
         % if ctx.comment or ctx.url_soure_name:
         <%util:accordion_group eid="acc-com" parent="sidebar-accordion" title="Comment" open="${False}">
             % if ctx.comment:
