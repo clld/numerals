@@ -136,16 +136,30 @@ class Varieties(Languages):
 class Numerals(Parameters):
     def get_options(self):
         opts = super(Parameters, self).get_options()
-        opts["aaSorting"] = [[0, "asc"], [1, "asc"]]
-
+        opts["aaSorting"] = [[0, "asc"]]
+        opts['iDisplayLength'] = 200
         return opts
 
     def col_defs(self):
         return [
             NumeralParameterCol(
                 self,
-                "number",
+                "numeral",
                 model_col=Parameter.name,
+            ),
+            Col(
+                self,
+                "count_of_datapoints",
+                sTitle='Number of data points',
+                sTooltip='number of data points per numeral',
+                model_col=NumberParameter.count_of_datapoints,
+            ),
+            Col(
+                self,
+                "count_of_varieties",
+                sTitle='Number of distinct varieties',
+                sTooltip='number of distinct varieties based on assigned Glottocodes',
+                model_col=NumberParameter.count_of_varieties,
             ),
             NumberConcepticonCol(
                 self,
@@ -169,7 +183,10 @@ class Datapoints(Values):
 
     def get_options(self):
         opts = super(Values, self).get_options()
-        opts["aaSorting"] = [[0, "asc"], [1, "asc"]]
+        if self.parameter:
+            opts["aaSorting"] = [[1, "asc"], [2, "asc"], [0, "asc"]]
+        else:
+            opts["aaSorting"] = [[0, "asc"]]
 
         return opts
 
