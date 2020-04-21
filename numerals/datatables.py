@@ -13,6 +13,7 @@ from clld_cognacy_plugin.datatables import ConcepticonCol
 from clld_cognacy_plugin.util import concepticon_link
 from sqlalchemy import Integer, and_
 from sqlalchemy.sql.expression import cast
+from sqlalchemy.orm import joinedload
 
 from numerals.models import Variety, NumberLexeme, NumberParameter
 
@@ -174,12 +175,19 @@ class Numerals(Parameters):
 class Datapoints(Values):
     def base_query(self, query):
         query = Values.base_query(self, query)
-        return query.join(
-            ValueSet.parameter,
-            Value.valueset,
-            ValueSet.contribution,
-            ValueSet.language,
-            ).join(Family, isouter=True)
+        if self.parameter:
+            return query.join(Family, isouter=True).options(
+                joinedload(Value.valueset, ValueSet.language),
+            )
+        elif self.contribution:
+            return query.options(
+                    joinedload(Value.valueset, ValueSet.parameter),
+                    joinedload(Value.valueset, ValueSet.language),
+                    joinedload(Value.valueset, ValueSet.contribution),
+                    joinedload(Value.domainelement),
+                )
+        else:
+            return query
 
     def get_options(self):
         opts = super(Values, self).get_options()
