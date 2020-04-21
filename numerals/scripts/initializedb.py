@@ -9,6 +9,7 @@ from clld_glottologfamily_plugin.util import load_families
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
 from pycldf.dataset import Wordlist
 from six import text_type
+from sqlalchemy import func
 
 import numerals
 from numerals import models
@@ -68,7 +69,12 @@ def main(args):
             name="{0}".format(parameter["ID"]),
             concepticon_id=parameter['Concepticon_ID'],
         )
-
+    basis_parameter = data.add(
+        models.NumberParameter,
+        "0",
+        id="0",
+        name="Base",
+    )
     load_family_langs = []
     for language in ds["LanguageTable"]:
         lang = data.add(
@@ -84,8 +90,6 @@ def main(args):
         )
         if language["Glottocode"]:
             load_family_langs.append((language["Glottocode"], lang))
-
-    basis_parameter = data.add(common.Parameter, "0", id="0", name="Base")
 
     # get orginal forms
     ds = Wordlist.from_metadata(data_repos[0]['data_path'] / 'cldf' / 'cldf-metadata.json')
@@ -189,6 +193,36 @@ def main(args):
 
 
 def prime_cache(args):
+
+    # add number of data points per parameter
+    for np in DBSession.query(models.NumberParameter, func.count(common.Parameter.pk)) \
+            .join(common.Parameter) \
+            .join(common.ValueSet) \
+            .join(common.Value) \
+            .group_by(models.NumberParameter.pk, common.Parameter.pk):
+        np[0].count_of_datapoints = np[1]
+
+    # add number of distinct varieties per parameter based on assigned glottocodes
+    for np in DBSession.query(models.NumberParameter, func.count(common.Identifier.name)) \
+            .join(common.ValueSet) \
+            .join(common.Value) \
+            .join(common.Language, common.ValueSet.language_pk == common.Language.pk) \
+            .join(common.LanguageIdentifier) \
+            .join(common.Identifier) \
+            .filter(common.Identifier.type == common.IdentifierType.glottolog.value) \
+            .group_by(models.NumberParameter.pk, common.Parameter.pk):
+        np[0].count_of_varieties = np[1]
+
+    # add number of data points of parameter "base"
+    base_pk, cnt_base = DBSession.query(common.Parameter.pk, func.count(common.ValueSet.pk)) \
+        .join(common.Parameter) \
+        .filter(common.Parameter.name == 'Base') \
+        .group_by(common.Parameter.pk).all()[0]
+    for np in DBSession.query(models.Parameter) \
+            .join(models.NumberParameter) \
+            .filter(common.Parameter.pk == base_pk):
+        np.count_of_datapoints = cnt_base
+        break
 
     DBSession.query(LanguageTreeLabel).delete()
     DBSession.query(TreeLabel).delete()

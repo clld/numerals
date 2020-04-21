@@ -54,3 +54,5 @@ class Variety(CustomModelMixin, Language, HasFamilyMixin):
 class NumberParameter(CustomModelMixin, Parameter):
     pk = Column(Integer, ForeignKey('parameter.pk'), primary_key=True)
     concepticon_id = Column(Integer)
+    count_of_datapoints = Column(Integer)
+    count_of_varieties = Column(Integer)
