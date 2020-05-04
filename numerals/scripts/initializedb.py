@@ -3,13 +3,14 @@ import unicodedata
 from clldutils.path import Path
 from clld.db.meta import DBSession
 from clld.db.models import common
+from clld.db.util import collkey, with_collkey_ddl
 from clldutils import color
 from clld.scripts.util import initializedb, Data, add_language_codes
 from clld_glottologfamily_plugin.util import load_families
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
 from pycldf.dataset import Wordlist
 from six import text_type
-from sqlalchemy import func
+from sqlalchemy import func, Index
 
 import numerals
 from numerals import models
@@ -30,7 +31,13 @@ data_repos = [
 ]
 
 
+with_collkey_ddl()
+
+
 def main(args):
+
+    Index('ducet', collkey(func.replace(func.replace(common.Value.name, 'ˈ', ''), 'ː', '')))\
+        .create(DBSession.bind)
 
     data = Data()
 
