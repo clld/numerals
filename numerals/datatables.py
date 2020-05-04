@@ -1,6 +1,6 @@
 from clld.db.models.common import (Language, Parameter, DomainElement, Value, Contribution,
     ValueSet, Identifier, LanguageIdentifier, IdentifierType)
-from clld.db.util import icontains
+from clld.db.util import icontains, collkey
 from clld.web.datatables.base import LinkCol, DetailsRowLinkCol, LinkToMapCol, Col
 from clld.web.datatables.language import Languages
 from clld.web.datatables.parameter import Parameters
@@ -11,7 +11,7 @@ from clld_glottologfamily_plugin.datatables import FamilyCol
 from clld_glottologfamily_plugin.models import Family
 from clld_cognacy_plugin.datatables import ConcepticonCol
 from clld_cognacy_plugin.util import concepticon_link
-from sqlalchemy import Integer, and_
+from sqlalchemy import Integer, and_, func
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.orm import joinedload
 
@@ -57,7 +57,7 @@ class NumeralISOCol(Col):
 
 class NumeralValueNameCol(ValueNameCol):
     def order(self):
-        return Value.name
+        return collkey(func.replace(func.replace(Value.name,'ˈ', ''),'ː', ''))
 
     def format(self, item):
         if item.domainelement:
