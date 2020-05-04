@@ -10,7 +10,11 @@
             % for value in valueset.values:
             <li>
                 ${h.map_marker_img(request, value)}
-                ${h.link(request, valueset, label=str(value))}
+                % if value.domainelement:
+                  ${value.domainelement.name}
+                % else:
+                  ${h.link(request, valueset, label=str(value))}
+                % endif
                 ${h.format_frequency(request, value)}
             </li>
             % endfor
