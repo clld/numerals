@@ -59,6 +59,11 @@ class NumeralValueNameCol(ValueNameCol):
     def order(self):
         return Value.name
 
+    def format(self, item):
+        if item.domainelement:
+            return item.domainelement.name
+        return super(NumeralValueNameCol, self).format(item)
+
     def search(self, qs):
         if self.dt.parameter and self.dt.parameter.name == 'Base':
             return icontains(DomainElement.name, qs)
