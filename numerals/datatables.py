@@ -57,7 +57,7 @@ class NumeralISOCol(Col):
 
 class NumeralValueNameCol(ValueNameCol):
     def order(self):
-        return collkey(func.replace(func.replace(Value.name,'ˈ', ''),'ː', ''))
+        return collkey(func.translate(Value.name, 'ˈ,ː,ˌ', ''))
 
     def format(self, item):
         if item.domainelement:
