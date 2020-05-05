@@ -36,7 +36,7 @@ with_collkey_ddl()
 
 def main(args):
 
-    Index('ducet', collkey(func.replace(func.replace(common.Value.name, 'ˈ', ''), 'ː', '')))\
+    Index('ducet', collkey(func.translate(common.Value.name, 'ˈ,ː,ˌ', '')))\
         .create(DBSession.bind)
 
     data = Data()
