@@ -182,13 +182,13 @@ class Datapoints(Values):
         query = Values.base_query(self, query)
         if self.parameter:
             return query.join(Family, isouter=True).options(
-                joinedload(Value.valueset, ValueSet.language),
+                joinedload(Value.valueset).joinedload(ValueSet.language),
             )
         elif self.contribution:
             return query.options(
-                    joinedload(Value.valueset, ValueSet.parameter),
-                    joinedload(Value.valueset, ValueSet.language),
-                    joinedload(Value.valueset, ValueSet.contribution),
+                    joinedload(Value.valueset).joinedload(ValueSet.parameter),
+                    joinedload(Value.valueset).joinedload(ValueSet.language),
+                    joinedload(Value.valueset).joinedload(ValueSet.contribution),
                     joinedload(Value.domainelement),
                 )
         else:
