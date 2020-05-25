@@ -3,9 +3,8 @@ from functools import partial
 from clld.interfaces import IMapMarker, ICtxFactoryQuery
 from clld.db.models import common
 from clldutils import svg
-from clld.web.app import menu_item
+from clld.web.app import menu_item, CtxFactoryQuery
 from clld.web.icon import MapMarker
-from clld.web.app import CtxFactoryQuery
 from pyramid.config import Configurator
 from sqlalchemy.orm import joinedload
 
