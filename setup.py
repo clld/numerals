@@ -22,7 +22,7 @@ setup(
         'clld>=7.1.0',
         'clldmpg>=3.4.0',
         'clld-glottologfamily-plugin>=4.0.0',
-        'clld-phylogeny-plugin>=1.4.0',
+        'clld-phylogeny-plugin>=1.4.1',
         'clld-cognacy-plugin>=0.2.0',
         'csvw>=1.7.0',
         'pybtex>=0.22',
