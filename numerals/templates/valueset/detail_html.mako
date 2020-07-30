@@ -27,6 +27,11 @@
 <%def name="sidebar()">
 <div class="well well-small">
 <dl>
+    % if ctx.parameter.concepticon_id:
+        <dt>Concepticon</dt>
+        <dd>${h.external_link(url="https://concepticon.clld.org/parameters/{0}".format(ctx.parameter.concepticon_id),
+            label="Concept set \"{0}\" on Concepticon".format(ctx.parameter), target="_new")}</dd>
+    % endif
     <dt class="contribution">${_('Contribution')}:</dt>
     <dd class="contribution">
         ${h.link(request, ctx.contribution)}
