@@ -1,4 +1,3 @@
-import sys
 import unicodedata
 from clldutils.path import Path
 from clld.db.meta import DBSession
@@ -16,7 +15,6 @@ import numerals
 from numerals import models
 from numerals.scripts.global_tree import tree
 
-gl_repos = Path(numerals.__file__).parent / '../..' / 'glottolog'
 data_repos = [
     {
         'data_path': Path(numerals.__file__).parent / '../..' / 'channumerals',
@@ -24,10 +22,15 @@ data_repos = [
         'name': "Chan's Numerals",
     },
     {
-        'data_path': Path(numerals.__file__).parent / '../..' / 'numerals_d',
+        'data_path': Path(numerals.__file__).parent / '../..' / 'numerals',
         'id': 'channumerals_curated',
         'name': "Chan's Numerals (curated)",
     },
+    {
+        'data_path': Path(numerals.__file__).parent / '../..' / 'googleuninum',
+        'id': 'googleuninum',
+        'name': "UniNum",
+    }
 ]
 
 
@@ -35,7 +38,6 @@ with_collkey_ddl()
 
 
 def main(args):
-
     Index('ducet', collkey(func.translate(common.Value.name, 'ˈ,ː,ˌ', '')))\
         .create(DBSession.bind)
 
@@ -65,10 +67,13 @@ def main(args):
 
     DBSession.add(dataset)
 
-    # Take meta data from curated CLDF data set
     ds = Wordlist.from_metadata(data_repos[1]['data_path'] / 'cldf' / 'cldf-metadata.json')
+    uninum = Wordlist.from_metadata(data_repos[2]['data_path'] / 'cldf' / 'cldf-metadata.json')
+
     # Parameters:
-    for parameter in ds["ParameterTable"]:
+    parameters = {z["ID"]: z for z in list(ds["ParameterTable"]) + list(uninum["ParameterTable"])}.values()
+
+    for parameter in parameters:
         data.add(
             models.NumberParameter,
             parameter["ID"],
@@ -76,12 +81,14 @@ def main(args):
             name="{0}".format(parameter["ID"]),
             concepticon_id=parameter['Concepticon_ID'],
         )
+
     basis_parameter = data.add(
         models.NumberParameter,
-        "0",
-        id="0",
+        "-1",
+        id="-1",
         name="Base",
     )
+
     load_family_langs = []
     for language in ds["LanguageTable"]:
         lang = data.add(
@@ -177,10 +184,49 @@ def main(args):
             )
         )
 
+    uninum_contrib = data_repos[2]
+
+    contrib_uninum = data.add(
+        common.Contribution,
+        uninum_contrib["id"],
+        id=uninum_contrib["id"],
+        name=uninum_contrib["name"]
+    )
+
+    # Needs Glottolog mapping for UniNum data
+    for language in uninum["LanguageTable"]:
+        lang = data.add(models.Variety, language["ID"], id=language["ID"], name=language["Name"])
+        add_language_codes(data, lang, language["ISO639P3code"], glottocode=language["Glottocode"])
+
+    # Forms:
+    for form in uninum["FormTable"]:
+        valueset_id = "{0}-{1}".format(form["Parameter_ID"], form["Language_ID"])
+        valueset = data["ValueSet"].get(valueset_id)
+
+        # Unless we already have something in the VS:
+        if not valueset:
+            vs = data.add(
+                common.ValueSet,
+                valueset_id,
+                id=valueset_id,
+                language=data["Variety"][form["Language_ID"]],
+                parameter=data["NumberParameter"][form["Parameter_ID"]],
+                contribution=contrib_uninum,
+            )
+
+        DBSession.add(
+            models.NumberLexeme(
+                id=form["ID"],
+                name=form["Form"],
+                # comment=form.get("Comment"),
+                valueset=vs,
+            )
+        )
+
     load_families(
         Data(),
         load_family_langs,
-        glottolog_repos=gl_repos,
+        glottolog_repos=args.glottolog,
         strict=False,
     )
 
@@ -192,7 +238,7 @@ def main(args):
     for l in DBSession.query(models.Variety):
         l.jsondata = {"color": families[l.family_pk]}
 
-    p = common.Parameter.get("0")
+    p = common.Parameter.get("-1")
     colors = color.qualitative_colors(len(p.domain))
 
     for i, de in enumerate(p.domain):
@@ -200,7 +246,6 @@ def main(args):
 
 
 def prime_cache(args):
-
     # add number of data points per parameter
     for np in DBSession.query(models.NumberParameter, func.count(common.Parameter.pk)) \
             .join(common.Parameter) \
@@ -238,7 +283,7 @@ def prime_cache(args):
     langs = [l for l in DBSession.query(common.Language) if l.glottocode]
 
     newick, _ = tree(
-        [l.glottocode for l in langs], gl_repos=gl_repos
+        [l.glottocode for l in langs], gl_repos=args.glottolog
     )
 
     phylo = Phylogeny(id="phy", name="glottolog global tree", newick=newick)
@@ -249,8 +294,3 @@ def prime_cache(args):
         )
 
     DBSession.add(phylo)
-
-
-if __name__ == "__main__":  # pragma: no cover
-    initializedb(create=main, prime_cache=prime_cache)
-    sys.exit(0)

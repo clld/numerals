@@ -11,7 +11,7 @@ from clld_glottologfamily_plugin.datatables import FamilyCol
 from clld_glottologfamily_plugin.models import Family
 from clld_cognacy_plugin.datatables import ConcepticonCol
 from clld_cognacy_plugin.util import concepticon_link
-from sqlalchemy import Integer, and_, func
+from sqlalchemy import BigInteger, and_, func
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.orm import joinedload
 
@@ -78,13 +78,13 @@ class NumeralParameterCol(LinkCol):
 
     @staticmethod
     def order():
-        return cast(Parameter.id, Integer)
+        return cast(Parameter.id, BigInteger)
 
 
 class NumeralValueCol(LinkCol):
     @staticmethod
     def order():
-        return cast(Parameter.id, Integer)
+        return cast(Parameter.id, BigInteger)
 
 
 class NumberConcepticonCol(ConcepticonCol):

@@ -51,6 +51,7 @@ class Variety(CustomModelMixin, Language, HasFamilyMixin):
     comment = Column(Unicode)
     url_soure_name = Column(Unicode)
 
+
 class NumberParameter(CustomModelMixin, Parameter):
     pk = Column(Integer, ForeignKey('parameter.pk'), primary_key=True)
     concepticon_id = Column(Integer)
