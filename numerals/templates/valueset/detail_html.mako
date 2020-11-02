@@ -35,8 +35,6 @@
     <dt class="contribution">${_('Contribution')}:</dt>
     <dd class="contribution">
         ${h.link(request, ctx.contribution)}
-        by
-        ${h.linked_contributors(request, ctx.contribution)}
         ${h.button('cite', onclick=h.JSModal.show(ctx.contribution.name, request.resource_url(ctx.contribution, ext='md.html')))}
     </dd>
     <dt class="language">${_('Language')}:</dt>

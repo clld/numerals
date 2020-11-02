@@ -1,4 +1,3 @@
-# coding: utf8
 """
 Recreate glottolog data files from the current version published at http://glottolog.org
 """
@@ -11,7 +10,7 @@ from pyglottolog.api import Glottolog
 
 
 def tree(glottocodes, gl_repos):
-    label_pattern = re.compile("'[^\[]+\[([a-z0-9]{4}[0-9]{4})[^']*'")
+    label_pattern = re.compile(r"'[^\[]+\[([a-z0-9]{4}[0-9]{4})[^']*'")
 
     def rename(n):
         n.name = label_pattern.match(n.name).groups()[0]
@@ -44,7 +43,7 @@ def tree(glottocodes, gl_repos):
         tree.name = 'glottolog_{0}'.format(family.id)
 
         if family.level.name == 'family':
-            tree.prune([n for n in langs_selected])
+            tree.prune([n for n in langs_selected], preserve_branch_length=False)
             glottocodes_in_global_tree = glottocodes_in_global_tree.union(
                 set(n.name for n in tree.traverse()))
         else:

@@ -6,7 +6,7 @@ class NumeralParameterMap(ParameterMap):
         return {
             'base_layer': 'Esri.WorldPhysical',
             'icon_size': 15,
-            'max_zoom': 9,
+            'max_zoom': 8,
             'hash': True,
         }
 
@@ -16,7 +16,7 @@ class NumeralLanguagesMap(Map):
         return {
             'base_layer': 'Esri.WorldPhysical',
             'icon_size': 15,
-            'max_zoom': 9,
+            'max_zoom': 8,
             'hash': True,
             'info_query': {'map_pop_up': 1},
         }

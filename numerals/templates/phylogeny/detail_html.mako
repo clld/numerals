@@ -17,9 +17,6 @@
     <div class="span8">
         <h2>${title()}</h2>
 
-        % if ctx.description:
-            <div class="alert alert-info">${ctx.description}</div>
-        % endif
         % if tree.parameters:
             <div class="alert alert-success">
                 The tree has been pruned to only contain leaf nodes with values for
@@ -62,12 +59,14 @@
                                 ${parameter.name}
                             </a>
                         </div>
+                        % if parameter.name == 'Base':
                         <div id="acc-${parameter.id}"
                              class="accordion-body collapse${' in' if loop.first else ''}">
                             <div class="accordion-inner">
                                 ${h.get_adapter(h.interfaces.IRepresentation, parameter, req, ext='valuetable.html').render(parameter, req)|n}
                             </div>
                         </div>
+                        % endif
                     </div>
                 % endfor
             </div>

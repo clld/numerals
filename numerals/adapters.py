@@ -57,13 +57,13 @@ class NumeralbankTree(Tree):
 
     @lazyproperty
     def pruned_newick(self):
-        t = ete3.Tree(self.ctx.newick, format=1)
+        t = ete3.Tree(self.ctx.newick, format=9)
         try:
             t_dict = dict([n.name, n] for n in t.traverse())
             to_keep = set(
-                t_dict[l.name] for l in self.ctx.treelabels
-                if l.name in t_dict and any(
-                    lang.pk in self.language2valueset for lang in l.languages))
+                t_dict[lg.name] for lg in self.ctx.treelabels
+                if lg.name in t_dict and any(
+                    lang.pk in self.language2valueset for lang in lg.languages))
             _, node2path = t.get_common_ancestor(to_keep, get_path=True)
             to_keep.add(t)
             n2count = {}
@@ -85,7 +85,7 @@ class NumeralbankTree(Tree):
         except TreeError:
             return ''
 
-        return t.write(format=1)
+        return t.write(format=9)
 
     def comp(self, a, b, has_domain):
         if has_domain:
@@ -120,6 +120,7 @@ class NumeralbankTree(Tree):
             'conflict': False,
             'tooltip_title': 'Related ' + self.req.translate('Languages'),
         }
+        tip_title = set()
         if pindex is not None:
             parameter = self.parameters[pindex]
             domain = self.domains[pindex]
@@ -130,6 +131,7 @@ class NumeralbankTree(Tree):
                     vs = self.language2valueset[lpk][pindex]
                     values.extend(vs.values)
                     color = get_color(vs)
+                    tip_title.add(self.langpk2language[lpk].name)
                 except (KeyError, AttributeError):
                     continue
             if not values:
@@ -141,19 +143,26 @@ class NumeralbankTree(Tree):
                 res['conflict'] = not self.all_equal(values, bool(parameter.domain))
                 res['tooltip_title'] = 'Parameter ' + parameter.id
                 lis = []
+                vls = set()
                 for v in values:
                     lis.append(HTML.li(
                         vname(v) + ': ',
                         self._lg_link(self.req, v.valueset.language)))
+                    vls.add(vname(v))
+                res['tip_values'] = ", ".join(sorted(vls))
                 res['tooltip'] = HTML.ul(*lis, class_='unstyled')
                 res['shape'] = 'c'
                 res['color'] = color
+                res['tip_title'] = label.name + " – " + "; ".join(sorted(tip_title)) + ":"
 
         else:
             lis = []
             for lpk in self.glottolog2language_ids[label.name]:
                 lis.append(HTML.li(self._lg_link(self.req, self.langpk2language[lpk])))
+                tip_title.add(self.langpk2language[lpk].name)
             res['tooltip'] = HTML.ul(*lis)
+            res['tip_title'] = label.name + " – " + "; ".join(sorted(tip_title))
+        res['tip_values_sep'] = ' – '
         return res
 
     @lazyproperty
@@ -161,6 +170,22 @@ class NumeralbankTree(Tree):
         if self.parameters:
             return self.pruned_newick
         return self.ctx.newick
+
+    @lazyproperty
+    def labelSpec(self):
+        if self.parameters:
+            r_ = {
+                lg.name: [self.get_label_properties(lg, i)
+                          for i in range(len(self.parameters))]
+                for lg in self.ctx.treelabels
+                if any(lang.pk in self.language2valueset for lang in lg.languages)}
+            r = {}
+            for k, v in r_.items():
+                r[k] = v
+            return r
+        return {
+            lg.name: [self.get_label_properties(lg)]
+            for lg in self.ctx.treelabels if lg.languages}
 
 
 class NumeralGeoJsonLanguages(GeoJsonLanguages):
