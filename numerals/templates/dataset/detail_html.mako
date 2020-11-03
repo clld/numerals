@@ -9,9 +9,20 @@
     </div>
 </%def></%doc>
 
-<h2>Welcome to Numeralbank!</h2>
+<h2>Welcome to Numeralbank
+  <img width="120px" src="${request.static_url('numerals:static/numeralbank.png')}"/></h2>
 
 <p class="lead">
+    The lexicon of numerals of the world's languages.
+</p>
+
+<span style="float:right;margin:10px;">
+  <p class="lead" style="text-align: center;"><small>Numeralbank is part of</small></p>
+  <a href="https://glottobank.org">
+    <img width="200px" src="${request.static_url('numerals:static/glottobank_all.png')}"/></a>
+</span>
+
+<p>
     Numeralbank is a public database and repository on numeral systems in the
     world’s languages. It is motivated by the idea that number words do not just
     form an important part of most languages, but constitute systems that serve
@@ -26,7 +37,7 @@
     linguistic, cognitive, and cultural factors that may drive the emergence and
     evolution of numeral systems.
 </p>
-<p class="lead">
+<p>
     Entries in Numeralbank are largely based on data collected by Eugene Chan as
     part of the long-running project "Numeral Systems of the World's Languages"
     that was hosted at the former Department of Linguistics at the MPI for
