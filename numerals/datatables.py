@@ -22,6 +22,7 @@ from sqlalchemy.sql.expression import cast
 from sqlalchemy.orm import joinedload
 
 from numerals.models import Variety, NumberLexeme, NumberParameter, Provider
+from numerals.util import get_contributions
 
 
 class BoolCol(Col):
@@ -131,14 +132,6 @@ class NumeralFamilyCol(FamilyCol):
         return super(NumeralFamilyCol, self).format(item)
 
 
-class ProviderCol(Col):
-    __kw__ = {
-        'choices': [
-            r.id for r in DBSession.query(Contribution).order_by(Contribution.id)
-        ]
-    }
-
-
 class NumeralSources(Sources):
     def get_options(self):
         opts = super(Sources, self).get_options()
@@ -156,10 +149,11 @@ class NumeralSources(Sources):
             Col(self, 'year'),
             Col(self, 'author'),
             TypeCol(self, 'bibtex_type'),
-            ProviderCol(
+            Col(
                 self,
                 'contribution',
                 model_col=Contribution.id,
+                choices=get_contributions(),
                 get_object=lambda i: i.provider,
             ),
         ]
@@ -234,10 +228,11 @@ class Varieties(Languages):
                 "Family",
                 Variety
             ),
-            ProviderCol(
+            Col(
                 self,
                 "contribution",
-                model_col=Variety.contrib_name
+                model_col=Variety.contrib_name,
+                choices=get_contributions(),
             ),
         ]
 
@@ -326,10 +321,11 @@ class Datapoints(Values):
                     "form",
                     model_col=Value.name,
                 ),
-                ProviderCol(
+                Col(
                     self,
                     "contribution",
                     model_col=Variety.contrib_name,
+                    choices=get_contributions(),
                     get_object=lambda i: i.valueset.language
                 ),
                 Col(

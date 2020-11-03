@@ -1,11 +1,17 @@
 from clld.web.util.multiselect import CombinationMultiSelect
 from clld.db.meta import DBSession
-from clld.db.models.common import Language, Identifier, LanguageIdentifier, IdentifierType
+from clld.db.models.common import Language, Identifier, LanguageIdentifier, IdentifierType, Contribution
 from clld.web.util.htmllib import HTML
 
 
 def phylogeny_detail_html(request=None, context=None, **kw):
     return {"ms": CombinationMultiSelect}
+
+
+def get_contributions():
+    return [
+        r[0] for r in DBSession.query(Contribution.id).order_by(Contribution.id)
+    ]
 
 
 def get_variety_links(request=None, context=None, idtype='glottocode', **kw):
