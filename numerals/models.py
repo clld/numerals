@@ -54,6 +54,7 @@ class Variety(CustomModelMixin, Language, HasFamilyMixin):
     contrib_name = Column(Unicode)
 
 
+@implementer(interfaces.IParameter)
 class NumberParameter(CustomModelMixin, Parameter):
     pk = Column(Integer, ForeignKey('parameter.pk'), primary_key=True)
     concepticon_id = Column(Integer)
