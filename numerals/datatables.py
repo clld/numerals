@@ -283,7 +283,7 @@ class Datapoints(Values):
                 joinedload(Value.valueset).joinedload(ValueSet.language),
             )
         elif self.contribution:
-            return query.options(
+            return query.join(Language, isouter=True).options(
                 joinedload(Value.valueset).joinedload(ValueSet.parameter),
                 joinedload(Value.valueset).joinedload(ValueSet.language),
                 joinedload(Value.valueset).joinedload(ValueSet.contribution),
@@ -351,6 +351,36 @@ class Datapoints(Values):
                     sTitle="Map Link"
                 ),
             ]
+        elif self.language:
+            return [
+                NumeralValueCol(
+                    self,
+                    "parameter",
+                    model_col=Parameter.name,
+                    get_object=lambda i: i.valueset.parameter,
+                ),
+                NumeralValueNameCol(
+                    self,
+                    "form",
+                    model_col=Value.name
+                ),
+                Col(
+                    self,
+                    "other_form",
+                    model_col=NumberLexeme.other_form,
+                ),
+                Col(
+                    self,
+                    "comment",
+                    model_col=NumberLexeme.comment,
+                ),
+                BoolCol(
+                    self,
+                    "is_loan",
+                    sTitle="Loan?",
+                    model_col=NumberLexeme.is_loan,
+                ),
+            ]
         else:
             return [
                 NumeralValueCol(
@@ -358,6 +388,12 @@ class Datapoints(Values):
                     "parameter",
                     model_col=Parameter.name,
                     get_object=lambda i: i.valueset.parameter,
+                ),
+                LinkCol(
+                    self,
+                    "language",
+                    model_col=Language.name,
+                    get_object=lambda i: i.valueset.language,
                 ),
                 NumeralValueNameCol(
                     self,

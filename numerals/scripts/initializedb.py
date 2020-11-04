@@ -1,5 +1,6 @@
 import unicodedata
 import pylexibank
+import subprocess
 import re
 from pyconcepticon import Concepticon
 from clldutils.path import Path
@@ -9,6 +10,7 @@ from clld.db.util import collkey, with_collkey_ddl
 from clld.lib.bibtex import Database
 from clldutils import color
 from clldutils.misc import slug
+from clldutils.path import git_describe
 from clld.cliutil import Data, add_language_codes, bibtex2source
 from clld_glottologfamily_plugin.util import load_families
 from clld_glottologfamily_plugin.models import Family
@@ -32,6 +34,29 @@ def main(args):
 
     def unique_id(ds_id, local_id):
         return '{0}-{1}'.format(ds_id, local_id)
+
+    def git_last_commit_date(dir_, git_command='git'):
+        dir_ = Path(dir_)
+        if not dir_.exists():
+            raise ValueError('cannot read from non-existent directory')
+        dir_ = dir_.resolve()
+        cmd = [
+            git_command,
+            '--git-dir={0}'.format(dir_.joinpath('.git')),
+            '--no-pager', 'log', '-1', '--format="%ai"'
+        ]
+        try:
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            if p.returncode == 0:
+                res = stdout.strip()  # pragma: no cover
+            else:
+                raise ValueError(stderr)
+        except (ValueError, FileNotFoundError):
+            return ''
+        if not isinstance(res, str):
+            res = res.decode('utf8')
+        return res.replace('"', '')
 
     assert args.glottolog, 'The --glottolog option is required!'
     assert args.concepticon, 'The --concepticon option is required!'
@@ -87,6 +112,7 @@ def main(args):
         publisher_url="https://www.eva.mpg.de",
         license="https://creativecommons.org/licenses/by/4.0/",
         domain="numerals.clld.org",
+        contact='lingweb@shh.mpg.de',
         jsondata={
             "license_icon": "cc-by.png",
             "license_name": "Creative Commons Attribution 4.0 International License",
@@ -127,6 +153,14 @@ def main(args):
 
         rdfID = ds.properties.get('rdf:ID')
 
+        accessURL = ds.properties.get('dcat:accessURL')
+        m = re.findall(r'^(.*?)\-', git_describe(ds.directory.parent))
+        if m:
+            git_version = m[0]
+            accessURL = '{0}/releases/tag/{1}'.format(accessURL, git_version)
+        else:
+            git_version = git_last_commit_date(ds.directory.parent)
+
         contrib = models.Provider(
             id=rdfID,
             name=ds.properties.get('dc:title'),
@@ -134,7 +168,8 @@ def main(args):
             url=ds.properties.get('dc:identifier'),
             license=ds.properties.get('dc:license'),
             aboutUrl=ds.properties.get('aboutUrl'),
-            accessURL=ds.properties.get('dcat:accessURL'),
+            accessURL=accessURL,
+            version=git_version,
         )
         DBSession.add(contrib)
         DBSession.flush()
@@ -260,13 +295,20 @@ def main(args):
                 if unicodedata.normalize('NFC', org_forms[form["ID"]]["Form"].strip()) != form["Form"]:
                     org_form = org_forms[form["ID"]]["Form"]
 
+            other_form = form["Other_Form"] if "Other_Form" in form else None
+            # handle specific datasets' other forms
+            if rdfID == 'ids':
+                other_form = '; '.join(form["AlternativeValues"]) if "AlternativeValues" in form else None
+            elif rdfID == 'northeuralex':
+                other_form = form["Value"] or None
+
             DBSession.add(
                 models.NumberLexeme(
                     id=f_id,
                     name=form["Form"],
                     comment=form["Comment"],
                     is_loan=form["Loan"],
-                    other_form=form["Other_Form"] if "Other_Form" in form else None,
+                    other_form=other_form,
                     org_form=org_form,
                     is_problematic=form["Problematic"] if "Problematic" in form else None,
                     valueset=vs,

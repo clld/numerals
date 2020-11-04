@@ -69,6 +69,7 @@ class Provider(CustomModelMixin, Contribution):
     license = Column(Unicode)
     aboutUrl = Column(Unicode)
     accessURL = Column(Unicode)
+    version = Column(Unicode)
     language_count = Column(Integer)
     parameter_count = Column(Integer)
     lexeme_count = Column(Integer)
