@@ -1,13 +1,18 @@
 <%inherit file="../home_comp.mako"/>
+<%namespace name="util" file="../util.mako"/>
 
-<%doc><%def name="sidebar()">
-    <div class="well">
-        <h3>Sidebar</h3>
-        <p>
-            Content
-        </p>
-    </div>
-</%def></%doc>
+<%def name="sidebar()">
+    <%util:well>
+        ${h.newline2br(h.text_citation(request, ctx))|n}
+        ${h.cite_button(request, ctx)}
+        <div style="float:right;margin:10px;margin-top:60px">
+          <p class="lead" style="text-align: center;margin-bottom:-10px"><small>Numeralbank is part of</small></p>
+          <a href="https://glottobank.org">
+            <img width="200px" src="${request.static_url('numerals:static/glottobank_all.png')}"/></a>
+        </div>
+    </%util:well>
+</%def>
+
 
 <h2>Welcome to Numeralbank
   <img width="120px" src="${request.static_url('numerals:static/numeralbank.png')}"/></h2>
@@ -16,11 +21,6 @@
     The lexicon of numerals of the world's languages.
 </p>
 
-<span style="float:right;margin:10px;">
-  <p class="lead" style="text-align: center;"><small>Numeralbank is part of</small></p>
-  <a href="https://glottobank.org">
-    <img width="200px" src="${request.static_url('numerals:static/glottobank_all.png')}"/></a>
-</span>
 
 <p>
     Numeralbank is a public database and repository on numeral systems in the
