@@ -1,5 +1,6 @@
 import unicodedata
 import pylexibank
+import subprocess
 import re
 from pyconcepticon import Concepticon
 from clldutils.path import Path
@@ -9,6 +10,7 @@ from clld.db.util import collkey, with_collkey_ddl
 from clld.lib.bibtex import Database
 from clldutils import color
 from clldutils.misc import slug
+from clldutils.path import git_describe
 from clld.cliutil import Data, add_language_codes, bibtex2source
 from clld_glottologfamily_plugin.util import load_families
 from clld_glottologfamily_plugin.models import Family
@@ -32,6 +34,29 @@ def main(args):
 
     def unique_id(ds_id, local_id):
         return '{0}-{1}'.format(ds_id, local_id)
+
+    def git_last_commit_date(dir_, git_command='git'):
+        dir_ = Path(dir_)
+        if not dir_.exists():
+            raise ValueError('cannot read from non-existent directory')
+        dir_ = dir_.resolve()
+        cmd = [
+            git_command,
+            '--git-dir={0}'.format(dir_.joinpath('.git')),
+            '--no-pager', 'log', '-1', '--format="%ai"'
+        ]
+        try:
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            if p.returncode == 0:
+                res = stdout.strip()  # pragma: no cover
+            else:
+                raise ValueError(stderr)
+        except (ValueError, FileNotFoundError):
+            return ''
+        if not isinstance(res, str):
+            res = res.decode('utf8')
+        return res.replace('"', '')
 
     assert args.glottolog, 'The --glottolog option is required!'
     assert args.concepticon, 'The --concepticon option is required!'
@@ -127,6 +152,14 @@ def main(args):
 
         rdfID = ds.properties.get('rdf:ID')
 
+        accessURL = ds.properties.get('dcat:accessURL')
+        m = re.findall(r'^(.*?)\-', git_describe(ds.directory.parent))
+        if m:
+            git_version = m[0]
+            accessURL = '{0}/releases/tag/{1}'.format(accessURL, git_version)
+        else:
+            git_version = git_last_commit_date(ds.directory.parent)
+
         contrib = models.Provider(
             id=rdfID,
             name=ds.properties.get('dc:title'),
@@ -134,7 +167,8 @@ def main(args):
             url=ds.properties.get('dc:identifier'),
             license=ds.properties.get('dc:license'),
             aboutUrl=ds.properties.get('aboutUrl'),
-            accessURL=ds.properties.get('dcat:accessURL'),
+            accessURL=accessURL,
+            version=git_version,
         )
         DBSession.add(contrib)
         DBSession.flush()

@@ -13,7 +13,14 @@
     <p>Available online at ${h.external_link(ctx.url)}</p>
 % endif
 % if ctx.accessURL:
-    <p>Data repository at ${h.external_link(ctx.accessURL)}</p>
+    <p>
+      Data repository at ${h.external_link(ctx.accessURL)}
+      % if ctx.version.find(' ') > -1:
+        – <i>accessed: ${ctx.version}</i>
+      % else:
+        – version ${ctx.version}
+      % endif
+    </p>
 % endif
 
 <table class="table table-nonfluid">
