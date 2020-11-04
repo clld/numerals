@@ -296,8 +296,6 @@ def main(args):
                     org_form = org_forms[form["ID"]]["Form"]
 
             other_form = form["Other_Form"] if "Other_Form" in form else None
-            if rdfID in other_form_map:
-                if ds.
             # handle specific datasets' other forms
             if rdfID == 'ids':
                 other_form = '; '.join(form["AlternativeValues"]) if "AlternativeValues" in form else None
