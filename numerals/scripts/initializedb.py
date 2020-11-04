@@ -32,11 +32,6 @@ with_collkey_ddl()
 
 def main(args):
 
-    other_form_map = {
-        'ids': 'AlternativeValues',
-        'northeuralex': 'Value',
-    }
-
     def unique_id(ds_id, local_id):
         return '{0}-{1}'.format(ds_id, local_id)
 
