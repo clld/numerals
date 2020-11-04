@@ -32,6 +32,11 @@ with_collkey_ddl()
 
 def main(args):
 
+    other_form_map = {
+        'ids': 'AlternativeValues',
+        'northeuralex': 'Value',
+    }
+
     def unique_id(ds_id, local_id):
         return '{0}-{1}'.format(ds_id, local_id)
 
@@ -112,7 +117,7 @@ def main(args):
         publisher_url="https://www.eva.mpg.de",
         license="https://creativecommons.org/licenses/by/4.0/",
         domain="numerals.clld.org",
-        contact='hans_joerg_bibiko@eva.mpg.de',
+        contact='lingweb@shh.mpg.de',
         jsondata={
             "license_icon": "cc-by.png",
             "license_name": "Creative Commons Attribution 4.0 International License",
@@ -296,6 +301,8 @@ def main(args):
                     org_form = org_forms[form["ID"]]["Form"]
 
             other_form = form["Other_Form"] if "Other_Form" in form else None
+            if rdfID in other_form_map:
+                if ds.
             # handle specific datasets' other forms
             if rdfID == 'ids':
                 other_form = '; '.join(form["AlternativeValues"]) if "AlternativeValues" in form else None
