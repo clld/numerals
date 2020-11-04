@@ -112,6 +112,7 @@ def main(args):
         publisher_url="https://www.eva.mpg.de",
         license="https://creativecommons.org/licenses/by/4.0/",
         domain="numerals.clld.org",
+        contact='hans_joerg_bibiko@eva.mpg.de',
         jsondata={
             "license_icon": "cc-by.png",
             "license_name": "Creative Commons Attribution 4.0 International License",
