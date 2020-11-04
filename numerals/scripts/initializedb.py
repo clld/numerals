@@ -294,13 +294,20 @@ def main(args):
                 if unicodedata.normalize('NFC', org_forms[form["ID"]]["Form"].strip()) != form["Form"]:
                     org_form = org_forms[form["ID"]]["Form"]
 
+            other_form = form["Other_Form"] if "Other_Form" in form else None
+            # handle specific datasets' other forms
+            if rdfID == 'ids':
+                other_form = '; '.join(form["AlternativeValues"]) if "AlternativeValues" in form else None
+            elif rdfID == 'northeuralex':
+                other_form = form["Value"] or None
+
             DBSession.add(
                 models.NumberLexeme(
                     id=f_id,
                     name=form["Form"],
                     comment=form["Comment"],
                     is_loan=form["Loan"],
-                    other_form=form["Other_Form"] if "Other_Form" in form else None,
+                    other_form=other_form,
                     org_form=org_form,
                     is_problematic=form["Problematic"] if "Problematic" in form else None,
                     valueset=vs,
