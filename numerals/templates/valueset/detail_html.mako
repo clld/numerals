@@ -28,15 +28,13 @@
 <div class="well well-small">
 <dl>
     % if ctx.parameter.concepticon_id:
-        <dt>Concepticon</dt>
+        <dt>Concepticon:</dt>
         <dd>${h.external_link(url="https://concepticon.clld.org/parameters/{0}".format(ctx.parameter.concepticon_id),
             label="Concept set \"{0}\" on Concepticon".format(ctx.parameter), target="_new")}</dd>
     % endif
     <dt class="contribution">${_('Contribution')}:</dt>
     <dd class="contribution">
         ${h.link(request, ctx.contribution)}
-        by
-        ${h.linked_contributors(request, ctx.contribution)}
         ${h.button('cite', onclick=h.JSModal.show(ctx.contribution.name, request.resource_url(ctx.contribution, ext='md.html')))}
     </dd>
     <dt class="language">${_('Language')}:</dt>
@@ -46,7 +44,9 @@
     % if ctx.references or ctx.source:
     <dt class="source">${_('Source')}:</dt>
         % if ctx.source:
-        <dd>${ctx.source}</dd>
+          % for s in ctx.source.split(','):
+            <dd>${h.link(request, '{0}-{1}'.format(ctx.contribution.id, s), rsc='source')}</dd>
+          % endfor
         % endif
         % if ctx.references:
         <dd class="source">${h.linked_references(request, ctx)|n}</dd>

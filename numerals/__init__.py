@@ -44,14 +44,15 @@ _('Parameters')
 _('Phylogeny')
 _('Phylogenys')
 
+
 # noinspection PyUnusedLocal
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
     settings['route_patterns'] = {
-            'phylogenys': '/phylogenies',
-            'phylogeny': '/phylogenies/{id:[^/\.]+}',
-        }
+        'phylogenys': '/phylogenies',
+        'phylogeny': '/phylogenies/{id:[^/\.]+}',
+    }
     config = Configurator(settings=settings)
     config.include('clldmpg')
     config.include('clld_phylogeny_plugin')

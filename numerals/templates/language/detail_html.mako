@@ -25,7 +25,14 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
     <div style="clear: right;"> </div>
 
     <div class="well well-small">
-        Contributed by ${ctx.creator}
+    % if ctx.valuesets[0].contribution.id:
+        <b>${_('Contribution')}</b> (${ctx.valuesets[0].contribution.id}):<br />
+        ${ctx.valuesets[0].contribution.name}
+        ${h.button('cite', onclick=h.JSModal.show(ctx.valuesets[0].contribution.name, request.resource_url(ctx.valuesets[0].contribution, ext='md.html')))}
+    % endif
+    % if ctx.creator:
+        <br /><br />Contributed by ${ctx.creator}
+    % endif
     </div>
 
     <div class="accordion" id="sidebar-accordion">
@@ -35,9 +42,15 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
             ${h.format_coordinates(ctx)}
         </%util:accordion_group>
         % endif
-        <% v, t = u.get_variety_links(request, ctx) %>
+        <% v, t = u.get_variety_links(request, ctx, 'glottocode') %>
         % if v:
           <%util:accordion_group eid="acc-var" parent="sidebar-accordion" title="${t}" open="${False}">
+            ${v}
+          </%util:accordion_group>
+        % endif
+        <% v, t = u.get_variety_links(request, ctx, 'iso_code') %>
+        % if v:
+          <%util:accordion_group eid="acc-var-iso" parent="sidebar-accordion" title="${t}" open="${False}">
             ${v}
           </%util:accordion_group>
         % endif

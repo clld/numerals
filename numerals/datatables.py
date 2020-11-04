@@ -1,12 +1,18 @@
-from clld.db.models.common import (Language, Parameter, DomainElement, Value, Contribution,
-    ValueSet, Identifier, LanguageIdentifier, IdentifierType)
+from clld.db.models.common import (
+    Language, Parameter, DomainElement, Value, Contribution,
+    ValueSet, Identifier, LanguageIdentifier, IdentifierType, Source
+)
+from clld.db.meta import DBSession
 from clld.db.util import icontains, collkey
 from clld.web.datatables.base import LinkCol, DetailsRowLinkCol, LinkToMapCol, Col
 from clld.web.datatables.language import Languages
 from clld.web.datatables.parameter import Parameters
+from clld.web.datatables.source import Sources, TypeCol
+from clld.web.datatables.contribution import Contributions, CitationCol
 from clld.web.datatables.value import Values, ValueNameCol
 from clld.web.util.glottolog import url
-from clld.web.util.helpers import external_link
+from clld.web.util.helpers import external_link, map_marker_img
+from clld.web.util.htmllib import HTML
 from clld_glottologfamily_plugin.datatables import FamilyCol
 from clld_glottologfamily_plugin.models import Family
 from clld_cognacy_plugin.datatables import ConcepticonCol
@@ -15,7 +21,8 @@ from sqlalchemy import BigInteger, and_, func
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.orm import joinedload
 
-from numerals.models import Variety, NumberLexeme, NumberParameter
+from numerals.models import Variety, NumberLexeme, NumberParameter, Provider
+from numerals.util import get_contributions
 
 
 class BoolCol(Col):
@@ -32,10 +39,10 @@ class NumeralGlottocodeCol(Col):
     def format(self, item):
         if item.glottocode:
             return external_link(
-                        url=url(item.glottocode),
-                        label=item.glottocode,
-                        title="View languoid {0} at Glottolog".format(item.glottocode),
-                        target="_new")
+                url=url(item.glottocode),
+                label=item.glottocode,
+                title="View languoid {0} at Glottolog".format(item.glottocode),
+                target="_new")
         else:
             return ""
 
@@ -61,7 +68,11 @@ class NumeralValueNameCol(ValueNameCol):
 
     def format(self, item):
         if item.domainelement:
-            return item.domainelement.name
+            if self.dt.language:
+                return item.domainelement.name
+            else:
+                return HTML.div(map_marker_img(
+                    self.dt.req, self.get_obj(item)), ' ', item.domainelement.name)
         return super(NumeralValueNameCol, self).format(item)
 
     def search(self, qs):
@@ -94,6 +105,88 @@ class NumberConcepticonCol(ConcepticonCol):
         if not hasattr(item, 'concepticon_id'):
             return ''
         return concepticon_link(self.dt.req, item)
+
+
+class NumeralContributionCol(Col):
+
+    def search(self, qs):
+        return icontains(Contribution.id, qs)
+
+
+class NumberConcepticonCol(ConcepticonCol):
+    __kw__ = {"bSearchable": False, "bSortable": False}
+
+    def format(self, item):
+        if not hasattr(item, 'concepticon_id'):
+            return ''
+        return concepticon_link(self.dt.req, item)
+
+
+class NumeralFamilyCol(FamilyCol):
+    def format(self, item):
+        if self.dt.parameter and self.dt.parameter.name == 'Base':
+            item = self.get_obj(item)
+            if item.family:
+                return item.family.name
+            return 'isolate'
+        return super(NumeralFamilyCol, self).format(item)
+
+
+class NumeralSources(Sources):
+    def get_options(self):
+        opts = super(Sources, self).get_options()
+        opts["aaSorting"] = [[1, "asc"]]
+        return opts
+
+    def base_query(self, query):
+        return query.join(Contribution)
+
+    def col_defs(self):
+        return [
+            DetailsRowLinkCol(self, 'd'),
+            LinkCol(self, 'name'),
+            Col(self, 'description', sTitle='Title', format=lambda i: HTML.span(i.description)),
+            Col(self, 'year'),
+            Col(self, 'author'),
+            TypeCol(self, 'bibtex_type'),
+            Col(
+                self,
+                'contribution',
+                model_col=Contribution.id,
+                choices=get_contributions(),
+                get_object=lambda i: i.provider,
+            ),
+        ]
+
+
+class NumeralContributions(Contributions):
+    def col_defs(self):
+        return [
+            Col(self, 'id'),
+            LinkCol(self, 'name'),
+            Col(
+                self,
+                'language_count',
+                model_col=Provider.language_count,
+                sTitle='# languages',
+                sTooltip='Number of languages'
+            ),
+            Col(
+                self,
+                'parameter_count',
+                model_col=Provider.parameter_count,
+                sTitle='# numerals',
+                sTooltip='Number of numeral concepts'
+            ),
+            Col(
+                self,
+                'lexeme_count',
+                model_col=Provider.lexeme_count,
+                sTitle='# lexemes',
+                sTooltip='Number of lexemes'
+            ),
+            CitationCol(self, 'cite'),
+        ]
 
 
 class Varieties(Languages):
@@ -135,7 +228,12 @@ class Varieties(Languages):
                 "Family",
                 Variety
             ),
-            DetailsRowLinkCol(self, 'more'),
+            Col(
+                self,
+                "contribution",
+                model_col=Variety.contrib_name,
+                choices=get_contributions(),
+            ),
         ]
 
 
@@ -186,11 +284,11 @@ class Datapoints(Values):
             )
         elif self.contribution:
             return query.options(
-                    joinedload(Value.valueset).joinedload(ValueSet.parameter),
-                    joinedload(Value.valueset).joinedload(ValueSet.language),
-                    joinedload(Value.valueset).joinedload(ValueSet.contribution),
-                    joinedload(Value.domainelement),
-                )
+                joinedload(Value.valueset).joinedload(ValueSet.parameter),
+                joinedload(Value.valueset).joinedload(ValueSet.language),
+                joinedload(Value.valueset).joinedload(ValueSet.contribution),
+                joinedload(Value.domainelement),
+            )
         else:
             return query
 
@@ -212,7 +310,7 @@ class Datapoints(Values):
                     model_col=Language.name,
                     get_object=lambda i: i.valueset.language,
                 ),
-                FamilyCol(
+                NumeralFamilyCol(
                     self,
                     "Family",
                     Variety,
@@ -223,21 +321,34 @@ class Datapoints(Values):
                     "form",
                     model_col=Value.name,
                 ),
-                Col(self,
+                Col(
+                    self,
+                    "contribution",
+                    model_col=Variety.contrib_name,
+                    choices=get_contributions(),
+                    get_object=lambda i: i.valueset.language
+                ),
+                Col(
+                    self,
                     "other_form",
                     model_col=NumberLexeme.other_form,
                 ),
-                Col(self,
+                Col(
+                    self,
                     "comment",
                     model_col=NumberLexeme.comment,
                 ),
-                BoolCol(self,
+                BoolCol(
+                    self,
                     "is_loan",
                     sTitle="Loan?",
                     model_col=NumberLexeme.is_loan,
                 ),
                 LinkToMapCol(
-                    self, "m", get_object=lambda i: i.valueset.language, sTitle="Map Link"
+                    self,
+                    "m",
+                    get_object=lambda i: i.valueset.language,
+                    sTitle="Map Link"
                 ),
             ]
         else:
@@ -253,15 +364,18 @@ class Datapoints(Values):
                     "form",
                     model_col=Value.name
                 ),
-                Col(self,
+                Col(
+                    self,
                     "other_form",
                     model_col=NumberLexeme.other_form,
                 ),
-                Col(self,
+                Col(
+                    self,
                     "comment",
                     model_col=NumberLexeme.comment,
                 ),
-                BoolCol(self,
+                BoolCol(
+                    self,
                     "is_loan",
                     sTitle="Loan?",
                     model_col=NumberLexeme.is_loan,
@@ -273,3 +387,5 @@ def includeme(config):
     config.register_datatable("languages", Varieties)
     config.register_datatable("parameters", Numerals)
     config.register_datatable("values", Datapoints)
+    config.register_datatable("contributions", NumeralContributions)
+    config.register_datatable("sources", NumeralSources)
