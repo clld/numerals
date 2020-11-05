@@ -8,6 +8,9 @@
 <small>Cite as</small>
 <blockquote>
   ${ctx.description}
+  % if ctx.doi:
+    &nbsp;&nbsp;<a href="${ctx.accessURL}"><img src="https://zenodo.org/badge/DOI/${ctx.doi}.svg"/></a>
+  % endif
 </blockquote>
 % if ctx.url:
     <p>Available online at ${h.external_link(ctx.url)}</p>
@@ -17,8 +20,6 @@
       Data repository at ${h.external_link(ctx.accessURL)}
       % if ctx.version.find(' ') > -1:
         – <i>accessed: ${ctx.version}</i>
-      % else:
-        – version ${ctx.version}
       % endif
     </p>
 % endif
