@@ -32,6 +32,11 @@ with_collkey_ddl()
 
 def main(args):
 
+    other_form_map = { # contrib_id, form column
+        'ids': 'AlternativeValues',
+        'northeuralex': 'Value',
+    }
+
     def unique_id(ds_id, local_id):
         return '{0}-{1}'.format(ds_id, local_id)
 
@@ -296,11 +301,12 @@ def main(args):
                     org_form = org_forms[form["ID"]]["Form"]
 
             other_form = form["Other_Form"] if "Other_Form" in form else None
-            # handle specific datasets' other forms
-            if rdfID == 'ids':
-                other_form = '; '.join(form["AlternativeValues"]) if "AlternativeValues" in form else None
-            elif rdfID == 'northeuralex':
-                other_form = form["Value"] or None
+            if rdfID in other_form_map:
+                sep = ds["FormTable"].tableSchema.get_column(other_form_map[rdfID]).separator
+                if sep:
+                    other_form = '{0} '.format(sep).join(form[other_form_map[rdfID]])
+                else:
+                    other_form = form[other_form_map[rdfID]]
 
             DBSession.add(
                 models.NumberLexeme(
