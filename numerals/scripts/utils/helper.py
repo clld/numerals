@@ -14,6 +14,7 @@ def prepare_additional_datasets(args, submissions_path, cache_dir):
     contrib_repos = {}
     contrib_dois = {}
     contrib_skips = []
+    contrib_swaps = []
     unique_sids = set()
     for contrib_dir in submissions_path.iterdir():
         if not contrib_dir.is_dir():
@@ -69,6 +70,9 @@ def prepare_additional_datasets(args, submissions_path, cache_dir):
 
         if contrib_md.get('other_form'):
             other_form_map[sid] = contrib_md['other_form']
+            if contrib_md.get('swap_forms'):
+                if contrib_md['swap_forms']:
+                    contrib_swaps.append(sid)
         if contrib_md.get('id'):
             rdfids[sid] = sid
 
@@ -78,7 +82,8 @@ def prepare_additional_datasets(args, submissions_path, cache_dir):
         'contrib_paths_map': contrib_paths_map,
         'contrib_repos': contrib_repos,
         'contrib_dois': contrib_dois,
-        'contrib_skips': contrib_skips
+        'contrib_skips': contrib_skips,
+        'contrib_swaps': contrib_swaps
     }
 
 

@@ -287,6 +287,7 @@ def main(args):
                 if unicodedata.normalize('NFC', org_forms[form["ID"]]["Form"].strip()) != form["Form"]:
                     org_form = org_forms[form["ID"]]["Form"]
 
+            form_ = form["Form"]
             other_form = None
             if ds_dir in ds_metadata['other_form_map']:
                 o_form_col = ds_metadata['other_form_map'][ds_dir]
@@ -300,11 +301,14 @@ def main(args):
                         other_form = '{0} '.format(sep).join(form[o_form_col])
                     else:
                         other_form = form[o_form_col]
+                if ds_dir in ds_metadata['contrib_swaps']:
+                    if other_form:
+                        form_, other_form = other_form, form_
 
             DBSession.add(
                 models.NumberLexeme(
                     id=unique_id(rdfID, form["ID"]),
-                    name=form["Form"],
+                    name=form_,
                     comment=form["Comment"],
                     is_loan=form["Loan"],
                     other_form=other_form,
