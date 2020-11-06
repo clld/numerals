@@ -27,11 +27,12 @@ def prepare_additional_datasets(args, submissions_path, cache_dir):
             args.log.error('Id "{0}" of {1} is already used'.format(sid, contrib_dir.name))
             assert False, 'id error'
 
-        if contrib_md.get('skip'):
-            if contrib_md['skip']:
-                contrib_skips.append(sid)
-                args.log.info('   will be skipped')
-                continue
+        rdfids[sid] = sid
+
+        if contrib_md.get('skip') and contrib_md['skip']:
+            contrib_skips.append(sid)
+            args.log.info('   will be skipped')
+            continue
 
         if contrib_md.get('doi'):
             doi = contrib_md['doi']
@@ -70,11 +71,8 @@ def prepare_additional_datasets(args, submissions_path, cache_dir):
 
         if contrib_md.get('other_form'):
             other_form_map[sid] = contrib_md['other_form']
-            if contrib_md.get('swap_forms'):
-                if contrib_md['swap_forms']:
-                    contrib_swaps.append(sid)
-        if contrib_md.get('id'):
-            rdfids[sid] = sid
+            if contrib_md.get('swap_forms') and contrib_md['swap_forms']:
+                contrib_swaps.append(sid)
 
     return {
         'other_form_map': other_form_map,

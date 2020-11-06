@@ -1,30 +1,32 @@
-import unicodedata
+import ete3
+import json
+import pycldf
 import pylexibank
 import re
+import unicodedata
 from pyconcepticon import Concepticon
+from clldutils import color
+from clldutils.misc import slug
 from clldutils.path import Path
 from clld.db.meta import DBSession
 from clld.db.models import common
 from clld.db.util import collkey, with_collkey_ddl
 from clld.lib.bibtex import Database
-from clldutils import color
-from clldutils.misc import slug
 from clld.cliutil import Data, add_language_codes, bibtex2source
 from clld_glottologfamily_plugin.util import load_families
 from clld_glottologfamily_plugin.models import Family
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
-import pycldf
 from six import text_type
 from sqlalchemy import func, Index
 from datetime import date
-import json
-import ete3
 
 import numerals
 from numerals import models
 from numerals.scripts.global_tree import tree
 from numerals.scripts.utils.helper import unique_id, git_last_commit_date, prepare_additional_datasets
 
+
+NUMERALS_RDFID = 'numerals'
 
 with_collkey_ddl()
 
@@ -59,6 +61,7 @@ def main(args):
             str(data_set_path / 'channumerals' / 'cldf' / 'cldf-metadata.json'))["FormTable"])
 
     # add all other addition datasets and ignore datasets marked as 'skip'
+    is_numerals_ds_found = False
     for ds in pycldf.iter_datasets(cache_dir):
         if str(ds.directory).endswith('/cldf'):
             ds_dir = ds_metadata['contrib_paths_map'].get(ds.directory.parent.name, ds.directory.parent.name)
@@ -66,7 +69,11 @@ def main(args):
                 if ds_metadata['contrib_skips'][ds_dir]:
                     args.log.info('{0} will be skipped'.format(ds_dir))
                     continue
+            if ds_dir == NUMERALS_RDFID:
+                is_numerals_ds_found = True
             numeral_datasets.append(ds)
+
+    assert is_numerals_ds_found, 'dataset "numerals" must be imported'
 
     # get all concepts of numerals and convert them to integer ids
     concepticon_api = Concepticon(args.concepticon)
@@ -219,41 +226,44 @@ def main(args):
             else:
                 args.log.warn("Language ID '{0}' already exists".format(lg_id))
 
-        if rdfID == 'numerals':
-            # get orginal forms for numerals
+        # Add Base info if given and 'org_form' for 'numerals' only
+        org_forms = {}
+        if rdfID == NUMERALS_RDFID:
             org_forms = {f["ID"]: f for f in numeral_datasets[0]}
-
-        # Add Base info if given
-        for language in ds["LanguageTable"]:
-            # make language IDs unique cross datasets
-            lg_id = unique_id(rdfID, language["ID"])
-            if "Base" in language and language["Base"]:
-                basis = language["Base"]
-                de = data["DomainElement"].get(basis)
-                if not de:
-                    de = data.add(
-                        common.DomainElement,
-                        basis,
-                        id=text_type(basis),
-                        name=text_type(basis),
+            for language in ds["LanguageTable"]:
+                # make language IDs unique cross datasets
+                lg_id = unique_id(rdfID, language["ID"])
+                if "Base" in language and language["Base"]:
+                    basis = language["Base"]
+                    de = data["DomainElement"].get(basis)
+                    if not de:
+                        de = data.add(
+                            common.DomainElement,
+                            basis,
+                            id=text_type(basis),
+                            name=text_type(basis),
+                            parameter=basis_parameter,
+                        )
+                    vs = data.add(
+                        common.ValueSet,
+                        data["Variety"][lg_id].id,
+                        id="{0}-{1}".format(basis_parameter.id, data["Variety"][lg_id].id),
+                        language=data["Variety"][lg_id],
                         parameter=basis_parameter,
+                        contribution=contrib,
                     )
-                vs = data.add(
-                    common.ValueSet,
-                    data["Variety"][lg_id].id,
-                    id="{0}-{1}".format(basis_parameter.id, data["Variety"][lg_id].id),
-                    language=data["Variety"][lg_id],
-                    parameter=basis_parameter,
-                    contribution=contrib,
-                )
 
-                common.Value(
-                    id=data["Variety"][lg_id].id,
-                    valueset=vs,
-                    domainelement=de
-                )
+                    common.Value(
+                        id=data["Variety"][lg_id].id,
+                        valueset=vs,
+                        domainelement=de
+                    )
+
+        DBSession.flush()
 
         other_form_warning = False
+        add_other_form = bool(ds_dir in ds_metadata['other_form_map'])
+        swap_forms = bool(ds_dir in ds_metadata['contrib_swaps'])
         for form in pylexibank.progressbar(ds["FormTable"], desc="reading {0}".format(rdfID)):
 
             if form["Parameter_ID"] not in param_map:
@@ -283,13 +293,13 @@ def main(args):
 
             org_form = None
             # org forms only for numerals from channumerals
-            if rdfID == 'numerals' and form["ID"] in org_forms:
+            if rdfID == NUMERALS_RDFID and form["ID"] in org_forms:
                 if unicodedata.normalize('NFC', org_forms[form["ID"]]["Form"].strip()) != form["Form"]:
                     org_form = org_forms[form["ID"]]["Form"]
 
             form_ = form["Form"]
             other_form = None
-            if ds_dir in ds_metadata['other_form_map']:
+            if add_other_form:
                 o_form_col = ds_metadata['other_form_map'][ds_dir]
                 if o_form_col not in form:
                     if not other_form_warning:
@@ -301,8 +311,7 @@ def main(args):
                         other_form = '{0} '.format(sep).join(form[o_form_col])
                     else:
                         other_form = form[o_form_col]
-                if ds_dir in ds_metadata['contrib_swaps']:
-                    if other_form:
+                    if swap_forms and other_form:
                         form_, other_form = other_form, form_
 
             DBSession.add(
