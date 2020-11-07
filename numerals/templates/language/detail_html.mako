@@ -60,10 +60,16 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
                 ${ctx.comment}
             % endif
             % if ctx.url_soure_name:
+                <br /><br />
+                ${h.external_link(
+                  url="https://htmlpreview.github.io/?https://github.com/numeralbank/channumerals/master/raw/{0}".format(
+                    ctx.url_soure_name),
+                  label="Link to source site (accessed 2019-09-30)",
+                  target="_new")}
                 <br />
                 ${h.external_link(
                   url="https://mpi-lingweb.shh.mpg.de/numeral/{0}".format(ctx.url_soure_name),
-                  label="Link to source site",
+                  label="Link to current source site",
                   target="_new")}
             % endif
         </%util:accordion_group>
