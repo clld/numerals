@@ -1,100 +1,81 @@
-import unicodedata
+import ete3
+import json
+import pycldf
 import pylexibank
-import subprocess
 import re
+import unicodedata
 from pyconcepticon import Concepticon
+from clldutils import color
+from clldutils.misc import slug
 from clldutils.path import Path
 from clld.db.meta import DBSession
 from clld.db.models import common
 from clld.db.util import collkey, with_collkey_ddl
 from clld.lib.bibtex import Database
-from clldutils import color
-from clldutils.misc import slug
-from clldutils.path import git_describe
 from clld.cliutil import Data, add_language_codes, bibtex2source
 from clld_glottologfamily_plugin.util import load_families
 from clld_glottologfamily_plugin.models import Family
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
-from pycldf.dataset import iter_datasets
 from six import text_type
 from sqlalchemy import func, Index
 from datetime import date
-import json
-import ete3
 
 import numerals
 from numerals import models
 from numerals.scripts.global_tree import tree
+from numerals.scripts.utils.helper import unique_id, git_last_commit_date, prepare_additional_datasets
 
+
+NUMERALS_RDFID = 'numerals'
 
 with_collkey_ddl()
 
 
 def main(args):
 
-    other_form_map = { # contrib_id, form column
-        'ids': 'AlternativeValues',
-        'northeuralex': 'Value',
-    }
+    # data_set_path contains the default dataset 'channumerals'
+    # all additional datasets will be handled via the git-repo 'numeralbank-internal'
 
-    def unique_id(ds_id, local_id):
-        return '{0}-{1}'.format(ds_id, local_id)
+    # path of additional datasets
+    internal_repo = Path(numerals.__file__).parent.parent.parent.parent / 'numeralbank' / 'numeralbank-internal'
 
-    def git_last_commit_date(dir_, git_command='git'):
-        dir_ = Path(dir_)
-        if not dir_.exists():
-            raise ValueError('cannot read from non-existent directory')
-        dir_ = dir_.resolve()
-        cmd = [
-            git_command,
-            '--git-dir={0}'.format(dir_.joinpath('.git')),
-            '--no-pager', 'log', '-1', '--format="%ai"'
-        ]
-        try:
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            if p.returncode == 0:
-                res = stdout.strip()  # pragma: no cover
-            else:
-                raise ValueError(stderr)
-        except (ValueError, FileNotFoundError):
-            return ''
-        if not isinstance(res, str):
-            res = res.decode('utf8')
-        return res.replace('"', '')
+    # path of the core datasets 'channumerals'
+    data_set_path = Path(numerals.__file__).parent.parent.parent.parent / 'numeralbank'
 
     assert args.glottolog, 'The --glottolog option is required!'
     assert args.concepticon, 'The --concepticon option is required!'
 
-    data_set_path = input('Path to Numerals cldf datasets:') or\
-        Path(numerals.__file__).parent.parent.parent.parent / 'numeralbank'
+    cache_dir = internal_repo / 'datasets'
+    cache_dir.mkdir(exist_ok=True)
 
-    numeral_datasets, main_numeral_found, org_numeral_found = [], False, False
-    for ds in iter_datasets(data_set_path):
-        try:
-            if str(ds.directory).endswith('/cldf'):
-                if ds.properties.get('rdf:ID', '') == 'channumerals':
-                    # general Numeral dataset must be first item
-                    numeral_datasets.insert(0, ds)
-                    org_numeral_found = True
-                else:
-                    numeral_datasets.append(ds)
-                    if ds.properties.get('rdf:ID', '') == 'numerals':
-                        main_numeral_found = True
-        except IndexError:
-            continue
+    submissions_path = internal_repo / 'submissions-internal'
 
-    assert main_numeral_found, 'No main Numeral dataset found'
-    assert org_numeral_found, 'No original Chan Numeral dataset found'
-    assert numeral_datasets, 'No valid Numeral datasets found'
+    ds_metadata = prepare_additional_datasets(args, submissions_path, cache_dir)
 
-    # first ds must be Chan's original dataset, second ds must be the main numerals one
-    for idx, ds in enumerate(numeral_datasets):
-        if ds.properties.get('rdf:ID', '') == 'numerals':
-            numeral_datasets.insert(1, numeral_datasets.pop(idx))
-            break
+    numeral_datasets = []
 
-    # get all concepts of numerals and them to integer ids
+    # load core dataset to get original forms for numerals
+    args.log.info('Loading form table from core dataset "channumerals"')
+    numeral_datasets.append(
+        pycldf.Dataset.from_metadata(
+            str(data_set_path / 'channumerals' / 'cldf' / 'cldf-metadata.json'))["FormTable"])
+
+    # add all other addition datasets and ignore datasets marked as 'skip'
+    is_numerals_ds_found = False
+    for ds in pycldf.iter_datasets(cache_dir):
+        if str(ds.directory).endswith('/cldf'):
+            ds_dir = ds_metadata['contrib_paths_map'].get(ds.directory.parent.name, ds.directory.parent.name)
+            if ds_dir in ds_metadata['contrib_skips']:
+                if ds_metadata['contrib_skips'][ds_dir]:
+                    args.log.info('{0} will be skipped'.format(ds_dir))
+                    continue
+            if ds_dir == NUMERALS_RDFID:
+                is_numerals_ds_found = True
+            numeral_datasets.append(ds)
+
+    assert is_numerals_ds_found, 'dataset "numerals" must be imported'
+
+    # get all concepts of numerals and convert them to integer ids
     concepticon_api = Concepticon(args.concepticon)
     number_concept_map = {
         c.id: re.sub(r'^.*?\((\d+)\).*$', r'\1', c.definition)
@@ -154,15 +135,27 @@ def main(args):
     DBSession.add(dataset)
 
     # iterate through all sets but ignore channumerals
-    for i, ds in enumerate(numeral_datasets[1:]):
+    for ds in numeral_datasets[1:]:
+        if ds.directory.parent.name in ds_metadata['contrib_paths_map']:
+            ds_dir = ds_metadata['contrib_paths_map'][ds.directory.parent.name]
+            args.log.info('Processing {0}'.format(ds_dir))
+        else:
+            args.log.warn('{0} was skipped due to unknown contrib_path'.format(
+                ds.directory.parent.name))
+            continue
 
-        rdfID = ds.properties.get('rdf:ID')
+        if ds_dir in ds_metadata['rdfids']:
+            rdfID = ds_metadata['rdfids'][ds_dir]
+        else:
+            args.log.warn('{0} will be skipped - no "id" given'.format(ds_dir))
+            continue
 
+        doi = ''
+        git_version = ''
         accessURL = ds.properties.get('dcat:accessURL')
-        m = re.findall(r'^(.*?)\-', git_describe(ds.directory.parent))
-        if m:
-            git_version = m[0]
-            accessURL = '{0}/releases/tag/{1}'.format(accessURL, git_version)
+        if ds_dir in ds_metadata['contrib_dois']:
+            doi = ds_metadata['contrib_dois'][ds_dir]
+            accessURL = 'https://doi.org/{0}'.format(doi)
         else:
             git_version = git_last_commit_date(ds.directory.parent)
 
@@ -175,6 +168,7 @@ def main(args):
             aboutUrl=ds.properties.get('aboutUrl'),
             accessURL=accessURL,
             version=git_version,
+            doi=doi,
         )
         DBSession.add(contrib)
         DBSession.flush()
@@ -232,40 +226,44 @@ def main(args):
             else:
                 args.log.warn("Language ID '{0}' already exists".format(lg_id))
 
-        if rdfID == 'numerals':
-            # get orginal forms for numerals
-            org_forms = {f["ID"]: f for f in numeral_datasets[0]["FormTable"]}
-
-        # Add Base info if given
-        for language in ds["LanguageTable"]:
-            # make language IDs unique cross datasets
-            lg_id = unique_id(rdfID, language["ID"])
-            if "Base" in language and language["Base"]:
-                basis = language["Base"]
-                de = data["DomainElement"].get(basis)
-                if not de:
-                    de = data.add(
-                        common.DomainElement,
-                        basis,
-                        id=text_type(basis),
-                        name=text_type(basis),
+        # Add Base info if given and 'org_form' for 'numerals' only
+        org_forms = {}
+        if rdfID == NUMERALS_RDFID:
+            org_forms = {f["ID"]: f for f in numeral_datasets[0]}
+            for language in ds["LanguageTable"]:
+                # make language IDs unique cross datasets
+                lg_id = unique_id(rdfID, language["ID"])
+                if "Base" in language and language["Base"]:
+                    basis = language["Base"]
+                    de = data["DomainElement"].get(basis)
+                    if not de:
+                        de = data.add(
+                            common.DomainElement,
+                            basis,
+                            id=text_type(basis),
+                            name=text_type(basis),
+                            parameter=basis_parameter,
+                        )
+                    vs = data.add(
+                        common.ValueSet,
+                        data["Variety"][lg_id].id,
+                        id="{0}-{1}".format(basis_parameter.id, data["Variety"][lg_id].id),
+                        language=data["Variety"][lg_id],
                         parameter=basis_parameter,
+                        contribution=contrib,
                     )
-                vs = data.add(
-                    common.ValueSet,
-                    data["Variety"][lg_id].id,
-                    id="{0}-{1}".format(basis_parameter.id, data["Variety"][lg_id].id),
-                    language=data["Variety"][lg_id],
-                    parameter=basis_parameter,
-                    contribution=contrib,
-                )
 
-                common.Value(
-                    id=data["Variety"][lg_id].id,
-                    valueset=vs,
-                    domainelement=de
-                )
+                    common.Value(
+                        id=data["Variety"][lg_id].id,
+                        valueset=vs,
+                        domainelement=de
+                    )
 
+        DBSession.flush()
+
+        other_form_warning = False
+        add_other_form = bool(ds_dir in ds_metadata['other_form_map'])
+        swap_forms = bool(ds_dir in ds_metadata['contrib_swaps'])
         for form in pylexibank.progressbar(ds["FormTable"], desc="reading {0}".format(rdfID)):
 
             if form["Parameter_ID"] not in param_map:
@@ -293,25 +291,33 @@ def main(args):
                         source=src,
                     )
 
-            org_form = ""
+            org_form = None
             # org forms only for numerals from channumerals
-            f_id = unique_id(rdfID, form["ID"])
-            if rdfID == 'numerals' and form["ID"] in org_forms:
+            if rdfID == NUMERALS_RDFID and form["ID"] in org_forms:
                 if unicodedata.normalize('NFC', org_forms[form["ID"]]["Form"].strip()) != form["Form"]:
                     org_form = org_forms[form["ID"]]["Form"]
 
-            other_form = form["Other_Form"] if "Other_Form" in form else None
-            if rdfID in other_form_map:
-                sep = ds["FormTable"].tableSchema.get_column(other_form_map[rdfID]).separator
-                if sep:
-                    other_form = '{0} '.format(sep).join(form[other_form_map[rdfID]])
+            form_ = form["Form"]
+            other_form = None
+            if add_other_form:
+                o_form_col = ds_metadata['other_form_map'][ds_dir]
+                if o_form_col not in form:
+                    if not other_form_warning:
+                        args.log.warn('\nColumn "{0}" not found in form table!'.format(o_form_col))
+                        other_form_warning = True
                 else:
-                    other_form = form[other_form_map[rdfID]]
+                    sep = ds["FormTable"].tableSchema.get_column(o_form_col).separator
+                    if sep:
+                        other_form = '{0} '.format(sep).join(form[o_form_col])
+                    else:
+                        other_form = form[o_form_col]
+                    if swap_forms and other_form:
+                        form_, other_form = other_form, form_
 
             DBSession.add(
                 models.NumberLexeme(
-                    id=f_id,
-                    name=form["Form"],
+                    id=unique_id(rdfID, form["ID"]),
+                    name=form_,
                     comment=form["Comment"],
                     is_loan=form["Loan"],
                     other_form=other_form,
@@ -322,6 +328,7 @@ def main(args):
             )
         DBSession.flush()
 
+    args.log.info('Processing families')
     load_families(
         Data(),
         load_family_langs,
@@ -428,6 +435,7 @@ def prime_cache(args):
         )
     DBSession.add(phylo)
 
+    args.log.info('Processing family trees')
     families = DBSession.query(Family.pk, Family.name).all()
     p_pk = 1
     for f in families:

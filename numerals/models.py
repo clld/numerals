@@ -70,6 +70,7 @@ class Provider(CustomModelMixin, Contribution):
     aboutUrl = Column(Unicode)
     accessURL = Column(Unicode)
     version = Column(Unicode)
+    doi = Column(Unicode)
     language_count = Column(Integer)
     parameter_count = Column(Integer)
     lexeme_count = Column(Integer)

@@ -14,8 +14,6 @@
     <td>${h.external_link(url=p.accessURL, label=p.name, target="_new")}</td>
     % if p.version.find(' ') > -1:
       <td><i>accessed: ${p.version}</i></td>
-    % else:
-      <td>${p.version}</td>
     % endif
   </tr>
   % endfor
