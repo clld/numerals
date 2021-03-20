@@ -4,6 +4,8 @@ import pycldf
 import pylexibank
 import re
 import unicodedata
+import itertools
+
 from pyconcepticon import Concepticon
 from clldutils import color
 from clldutils.misc import slug
@@ -203,7 +205,20 @@ def main(args):
                     concepticon_id=parameter["Concepticon_ID"],
                 )
 
+        lgs_with_no_data = set()
+        for lg, forms in itertools.groupby(
+                sorted(ds["FormTable"], key=lambda k: k['Language_ID']),
+                lambda x: x["Language_ID"]):
+            if not any([f for f in forms if f['Parameter_ID'] in param_map]):
+                lgs_with_no_data.add(lg)
+
+        if lgs_with_no_data:
+            args.log.info('No data for {}'.format(', '.join(sorted(lgs_with_no_data))))
+
         for language in ds["LanguageTable"]:
+            if language["ID"] in lgs_with_no_data:
+                continue
+
             # make language IDs unique cross datasets
             lg_id = unique_id(rdfID, language["ID"])
             if lg_id not in data["Variety"]:
@@ -266,7 +281,8 @@ def main(args):
         swap_forms = bool(ds_dir in ds_metadata['contrib_swaps'])
         for form in pylexibank.progressbar(ds["FormTable"], desc="reading {0}".format(rdfID)):
 
-            if form["Parameter_ID"] not in param_map:
+            if form["Language_ID"] in lgs_with_no_data\
+                    or form["Parameter_ID"] not in param_map:
                 continue
 
             formpid = param_map[form["Parameter_ID"]]
