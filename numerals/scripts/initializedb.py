@@ -406,14 +406,22 @@ def prime_cache(args):
         prov.language_count = q.count()
         prov.update_jsondata(language_pks=[r[0] for r in q])
 
-        prov.parameter_count = DBSession.query(common.ValueSet.parameter_pk) \
+        pcnt = DBSession.query(common.ValueSet.parameter_pk) \
             .filter(common.ValueSet.contribution_pk == prov.pk) \
             .distinct() \
             .count()
-        prov.lexeme_count = DBSession.query(common.Value.pk)\
+        if prov.id == 'numerals':
+            # do not count 'base'
+            pcnt -= 1
+        prov.parameter_count = pcnt
+        lcnt = DBSession.query(common.Value.pk)\
             .join(common.ValueSet)\
             .filter(common.ValueSet.contribution_pk == prov.pk)\
             .count()
+        if prov.id == 'numerals':
+            # do not count 'base lexemes'
+            lcnt -= cnt_base
+        prov.lexeme_count = lcnt
 
     DBSession.query(LanguageTreeLabel).delete()
     DBSession.query(TreeLabel).delete()
