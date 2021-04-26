@@ -19,9 +19,6 @@
     % if value.is_loan:
       - ${_('is loan')}
     % endif
-    % if value.org_form:
-      - [<i>${_('original form')}: ${value.org_form}</i>]
-    % endif
 </div>
 % endfor
 <%def name="sidebar()">
