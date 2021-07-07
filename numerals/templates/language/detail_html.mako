@@ -68,7 +68,7 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
                   target="_new")}
                 <br />
                 ${h.external_link(
-                  url="https://mpi-lingweb.shh.mpg.de/numeral/{0}".format(ctx.url_soure_name),
+                  url="https://lingweb.eva.mpg.de/channumerals/{0}".format(ctx.url_soure_name),
                   label="Link to current source site",
                   target="_new")}
             % endif
