@@ -26,7 +26,7 @@ setup(
         'clld-cognacy-plugin>=0.2.1',
         'csvw>=1.11.0',
         'pybtex>=0.24',
-        'pycldf>=1.213',
+        'pycldf>=1.23.0',
         'sqlalchemy>=1.4.27',
         'waitress',
     ],
