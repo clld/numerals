@@ -19,7 +19,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'attrs>=21.2',
-        'clld>=8.0.1',
+        'clld>=9',
         'clldmpg>=4.2.0',
         'clld-glottologfamily-plugin>=4.0.0',
         'clld-phylogeny-plugin>=1.5',
@@ -33,6 +33,7 @@ setup(
     extras_require={
         'dev': [
             'flake8',
+            'pyramid_debugtoolbar',
             'psycopg2',
             'tox',
         ],

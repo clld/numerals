@@ -1,26 +1,32 @@
 import ete3
 import json
 import pycldf
-import pylexibank
 import re
 import unicodedata
 import itertools
 
-from pyconcepticon import Concepticon
 from clldutils import color
 from clldutils.misc import slug
 from clldutils.path import Path
 from clld.db.meta import DBSession
 from clld.db.models import common
-from clld.db.util import collkey, with_collkey_ddl
 from clld.lib.bibtex import Database
 from clld.cliutil import Data, add_language_codes, bibtex2source
 from clld_glottologfamily_plugin.util import load_families
 from clld_glottologfamily_plugin.models import Family
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
-from six import text_type
-from sqlalchemy import func, Index
+from sqlalchemy import func
 from datetime import date
+
+try:
+    import pylexibank
+except ImportError:
+    pylexibank = None
+
+try:
+    from pyconcepticon import Concepticon
+except:
+    Concepticon = None
 
 import numerals
 from numerals import models
@@ -29,8 +35,6 @@ from numerals.scripts.utils.helper import unique_id, git_last_commit_date, prepa
 
 
 NUMERALS_RDFID = 'numerals'
-
-with_collkey_ddl()
 
 
 def main(args):
@@ -84,9 +88,6 @@ def main(args):
         for c in concepticon_api.conceptsets.values()
         if c.semanticfield == 'Quantity' and c.ontological_category == 'Number'
     }
-
-    Index('ducet', collkey(func.translate(common.Value.name, 'ˈ,ː,ˌ', '')))\
-        .create(DBSession.bind)
 
     data = Data()
 
@@ -255,8 +256,8 @@ def main(args):
                         de = data.add(
                             common.DomainElement,
                             basis,
-                            id=text_type(basis),
-                            name=text_type(basis),
+                            id=str(basis),
+                            name=str(basis),
                             parameter=basis_parameter,
                         )
                     vs = data.add(

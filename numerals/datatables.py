@@ -2,8 +2,7 @@ from clld.db.models.common import (
     Language, Parameter, DomainElement, Value, Contribution,
     ValueSet, Identifier, LanguageIdentifier, IdentifierType, Source
 )
-from clld.db.meta import DBSession
-from clld.db.util import icontains, collkey
+from clld.db.util import icontains
 from clld.web.datatables.base import LinkCol, DetailsRowLinkCol, LinkToMapCol, Col
 from clld.web.datatables.language import Languages
 from clld.web.datatables.parameter import Parameters
@@ -64,7 +63,7 @@ class NumeralISOCol(Col):
 
 class NumeralValueNameCol(ValueNameCol):
     def order(self):
-        return collkey(func.translate(Value.name, 'ˈ,ː,ˌ', ''))
+        return func.translate(Value.name, 'ˈ,ː,ˌ', '')
 
     def format(self, item):
         if item.domainelement:
