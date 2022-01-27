@@ -155,16 +155,24 @@ def main(args):
 
         doi = ''
         git_version = ''
-        accessURL = ds.properties.get('dcat:accessURL')
+        accessURL = ds.properties.get('dcat:accessURL', None)
         if ds_dir in ds_metadata['contrib_dois']:
             doi = ds_metadata['contrib_dois'][ds_dir]
             accessURL = 'https://doi.org/{0}'.format(doi)
         else:
             git_version = git_last_commit_date(ds.directory.parent)
 
+        if accessURL is None:
+            accessURL = ds_metadata['contrib_repos'][ds_dir]
+
+        title = ds.properties.get('dc:title')
+        description = ds.properties.get('dc:description', "")
+        if description:
+            title = '{} – {}'.format(title, description)
+
         contrib = models.Provider(
             id=rdfID,
-            name=ds.properties.get('dc:title'),
+            name=title,
             description=ds.properties.get('dc:bibliographicCitation'),
             url=ds.properties.get('dc:identifier'),
             license=ds.properties.get('dc:license'),
