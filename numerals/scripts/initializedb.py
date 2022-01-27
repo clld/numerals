@@ -101,7 +101,7 @@ def main(args):
         publisher_url="https://www.eva.mpg.de",
         license="https://creativecommons.org/licenses/by/4.0/",
         domain="numerals.clld.org",
-        contact='lingweb@shh.mpg.de',
+        contact='dlce.rdm@eva.mpg.de',
         jsondata={
             "license_icon": "cc-by.png",
             "license_name": "Creative Commons Attribution 4.0 International License",
@@ -189,56 +189,58 @@ def main(args):
                 )
         DBSession.flush()
 
+        _n = ds.column_names
+
         param_map = {}
         for parameter in ds["ParameterTable"]:
-            if "Concepticon_ID" not in parameter\
-                    or parameter["Concepticon_ID"] not in number_concept_map:
+            if _n.parameters.concepticonReference not in parameter\
+                    or parameter[_n.parameters.concepticonReference] not in number_concept_map:
                 continue
 
-            pid = number_concept_map[parameter["Concepticon_ID"]]
-            param_map[parameter["ID"]] = pid
+            pid = number_concept_map[parameter[_n.parameters.concepticonReference]]
+            param_map[parameter[_n.parameters.id]] = pid
             if pid not in data["NumberParameter"]:
                 data.add(
                     models.NumberParameter,
                     pid,
                     id=pid,
                     name=pid,
-                    concepticon_id=parameter["Concepticon_ID"],
+                    concepticon_id=parameter[_n.parameters.concepticonReference],
                 )
 
         lgs_with_no_data = set()
         for lg, forms in itertools.groupby(
-                sorted(ds["FormTable"], key=lambda k: k['Language_ID']),
-                lambda x: x["Language_ID"]):
-            if not any([f for f in forms if f['Parameter_ID'] in param_map]):
+                sorted(ds["FormTable"], key=lambda k: k[_n.forms.languageReference]),
+                lambda x: x[_n.forms.languageReference]):
+            if not any([f for f in forms if f[_n.forms.parameterReference] in param_map]):
                 lgs_with_no_data.add(lg)
 
         if lgs_with_no_data:
             args.log.info('No data for {}'.format(', '.join(sorted(lgs_with_no_data))))
 
         for language in ds["LanguageTable"]:
-            if language["ID"] in lgs_with_no_data:
+            if language[_n.languages.id] in lgs_with_no_data:
                 continue
 
             # make language IDs unique cross datasets
-            lg_id = unique_id(rdfID, language["ID"])
+            lg_id = unique_id(rdfID, language[_n.languages.id])
             if lg_id not in data["Variety"]:
                 lang = data.add(
                     models.Variety,
                     lg_id,
                     id=lg_id,
-                    name=language["Name"],
-                    latitude=language["Latitude"],
-                    longitude=language["Longitude"],
+                    name=language[_n.languages.name],
+                    latitude=language[_n.languages.latitude],
+                    longitude=language[_n.languages.longitude],
                     contrib_name=rdfID,
-                    creator=language["Contributor"] if "Contributor" in language else None,
-                    comment=language["Comment"] if "Comment" in language else None,
+                    creator=language[_n.languages.contributor] if _n.languages.contributor in language else None,
+                    comment=language[_n.languages.comment] if _n.languages.comment in language else None,
                     url_soure_name=language["SourceFile"] if "SourceFile" in language else None,
                 )
-                if language["Glottocode"]:
-                    load_family_langs.append((language["Glottocode"], lang))
-                if language["ISO639P3code"]:
-                    add_language_codes(data, lang, language["ISO639P3code"])
+                if language[_n.languages.glottocode]:
+                    load_family_langs.append((language[_n.languages.glottocode], lang))
+                if language[_n.languages.iso639P3code]:
+                    add_language_codes(data, lang, language[_n.languages.iso639P3code])
             else:
                 args.log.warn("Language ID '{0}' already exists".format(lg_id))
 
@@ -282,22 +284,22 @@ def main(args):
         swap_forms = bool(ds_dir in ds_metadata['contrib_swaps'])
         for form in pylexibank.progressbar(ds["FormTable"], desc="reading {0}".format(rdfID)):
 
-            if form["Language_ID"] in lgs_with_no_data\
-                    or form["Parameter_ID"] not in param_map:
+            if form[_n.forms.languageReference] in lgs_with_no_data\
+                    or form[_n.forms.parameterReference] not in param_map:
                 continue
 
-            formpid = param_map[form["Parameter_ID"]]
+            formpid = param_map[form[_n.forms.parameterReference]]
 
-            valueset_id = "{0}-{1}-{2}".format(formpid, rdfID, form["Language_ID"])
+            valueset_id = "{0}-{1}-{2}".format(formpid, rdfID, form[_n.forms.languageReference])
             valueset = data["ValueSet"].get(valueset_id)
 
             # Unless we already have something in the VS:
             if not valueset:
-                lg_id = unique_id(rdfID, form["Language_ID"])
+                lg_id = unique_id(rdfID, form[_n.forms.languageReference])
                 if lg_id in data["Variety"]:
                     src = None
-                    if form["Source"]:
-                        src = ",".join(form["Source"])
+                    if form[_n.forms.source]:
+                        src = ",".join(form[_n.forms.source])
                     vs = data.add(
                         common.ValueSet,
                         valueset_id,
@@ -314,7 +316,7 @@ def main(args):
                 if unicodedata.normalize('NFC', org_forms[form["ID"]]["Form"].strip()) != form["Form"]:
                     org_form = org_forms[form["ID"]]["Form"]
 
-            form_ = form["Form"]
+            form_ = form[_n.forms.form]
             other_form = None
             if add_other_form:
                 o_form_col = ds_metadata['other_form_map'][ds_dir]
@@ -333,10 +335,10 @@ def main(args):
 
             DBSession.add(
                 models.NumberLexeme(
-                    id=unique_id(rdfID, form["ID"]),
+                    id=unique_id(rdfID, form[_n.forms.id]),
                     name=form_,
-                    comment=form["Comment"],
-                    is_loan=form["Loan"],
+                    comment=form[_n.forms.comment],
+                    is_loan=form["Loan"] if "Loan" in form else None,
                     other_form=other_form,
                     org_form=org_form,
                     is_problematic=form["Problematic"] if "Problematic" in form else None,
