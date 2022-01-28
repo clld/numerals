@@ -226,6 +226,28 @@ def main(args):
         if lgs_with_no_data:
             args.log.info('No data for {}'.format(', '.join(sorted(lgs_with_no_data))))
 
+        lang_header_names = set([c.name for c in ds["LanguageTable"].tableSchema.columns])
+        if ns.languages.contributor is None:
+            ns_languages_contributor = "_dummy_field_1"
+            if "Contributor" in lang_header_names:
+                ns_languages_contributor = "Contributor"
+            elif "Author" in lang_header_names:
+                ns_languages_contributor = "Author"
+        else:
+            ns_languages_contributor = ns.languages.contributor
+        if ns.languages.comment is None:
+            ns_languages_comment = "_dummy_field_2"
+            if "Comment" in lang_header_names:
+                ns_languages_comment = "Comment"
+            elif "Comments" in lang_header_names:
+                ns_languages_comment = "Comments"
+            elif "comment" in lang_header_names:
+                ns_languages_comment = "comment"
+            elif "comments" in lang_header_names:
+                ns_languages_comment = "comments"
+        else:
+            ns_languages_comment = ns.languages.comment
+
         for language in ds["LanguageTable"]:
             if language[ns.languages.id] in lgs_with_no_data:
                 continue
@@ -241,9 +263,9 @@ def main(args):
                     latitude=language[ns.languages.latitude],
                     longitude=language[ns.languages.longitude],
                     contrib_name=rdfID,
-                    creator=language[ns.languages.contributor] if ns.languages.contributor in language else None,
-                    comment=language[ns.languages.comment] if ns.languages.comment in language else None,
-                    url_soure_name=language["SourceFile"] if "SourceFile" in language else None,
+                    creator=language.get(ns_languages_contributor, None),
+                    comment=language.get(ns_languages_comment, None),
+                    url_soure_name=language.get("SourceFile", None),
                 )
                 if language[ns.languages.glottocode]:
                     load_family_langs.append((language[ns.languages.glottocode], lang))
