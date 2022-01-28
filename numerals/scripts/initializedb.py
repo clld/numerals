@@ -226,25 +226,12 @@ def main(args):
         if lgs_with_no_data:
             args.log.info('No data for {}'.format(', '.join(sorted(lgs_with_no_data))))
 
-        lang_header_names = set([c.name for c in ds["LanguageTable"].tableSchema.columns])
         if ns.languages.contributor is None:
-            ns_languages_contributor = "_dummy_field_1"
-            if "Contributor" in lang_header_names:
-                ns_languages_contributor = "Contributor"
-            elif "Author" in lang_header_names:
-                ns_languages_contributor = "Author"
+            ns_languages_contributor = "Contributor"
         else:
             ns_languages_contributor = ns.languages.contributor
         if ns.languages.comment is None:
-            ns_languages_comment = "_dummy_field_2"
-            if "Comment" in lang_header_names:
-                ns_languages_comment = "Comment"
-            elif "Comments" in lang_header_names:
-                ns_languages_comment = "Comments"
-            elif "comment" in lang_header_names:
-                ns_languages_comment = "comment"
-            elif "comments" in lang_header_names:
-                ns_languages_comment = "comments"
+            ns_languages_comment = "Comment"
         else:
             ns_languages_comment = ns.languages.comment
 
