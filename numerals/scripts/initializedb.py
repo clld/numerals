@@ -25,7 +25,7 @@ except ImportError:
 
 try:
     from pyconcepticon import Concepticon
-except:
+except ImportError:
     Concepticon = None
 
 import numerals
@@ -381,8 +381,7 @@ def main(args):
 def prime_cache(args):
 
     # add number of data points per parameter
-    for np in DBSession.query(models.NumberParameter, func.count(common.Parameter.pk)) \
-            .join(common.Parameter) \
+    for np in DBSession.query(common.Parameter, func.count(common.Parameter.pk)) \
             .join(common.ValueSet) \
             .join(common.Value) \
             .group_by(models.NumberParameter.pk, common.Parameter.pk):
@@ -405,7 +404,6 @@ def prime_cache(args):
         .filter(common.Parameter.name == 'Base') \
         .group_by(common.Parameter.pk).all()[0]
     for np in DBSession.query(models.Parameter) \
-            .join(models.NumberParameter) \
             .filter(common.Parameter.pk == base_pk):
         np.count_of_datapoints = cnt_base
         break
