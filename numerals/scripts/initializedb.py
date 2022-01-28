@@ -25,7 +25,7 @@ except ImportError:
 
 try:
     from pyconcepticon import Concepticon
-except:
+except ImportError:
     Concepticon = None
 
 import numerals
