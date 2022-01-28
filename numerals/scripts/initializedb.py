@@ -226,13 +226,12 @@ def main(args):
         if lgs_with_no_data:
             args.log.info('No data for {}'.format(', '.join(sorted(lgs_with_no_data))))
 
-        if ns.languages.contributor is None:
-            ns_languages_contributor = "Contributor"
-        else:
+        ns_languages_contributor = "Contributor"
+        if ns.languages.contributor is not None:
             ns_languages_contributor = ns.languages.contributor
-        if ns.languages.comment is None:
-            ns_languages_comment = "Comment"
-        else:
+
+        ns_languages_comment = "Comment"
+        if ns.languages.comment is not None:
             ns_languages_comment = ns.languages.comment
 
         for language in ds["LanguageTable"]:
