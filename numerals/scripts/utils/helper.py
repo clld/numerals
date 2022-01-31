@@ -9,6 +9,9 @@ from numerals.scripts.utils.cldf_zenodo import download_from_doi
 def prepare_additional_datasets(args, submissions_path, cache_dir):
     # download and prepare resp. additional datasets
     other_form_map = {}
+    lang_contributor_map = {}
+    lang_comment_map = {}
+    missing_metadata = {}
     rdfids = {}
     contrib_paths_map = {}
     contrib_repos = {}
@@ -74,6 +77,15 @@ def prepare_additional_datasets(args, submissions_path, cache_dir):
             if contrib_md.get('swap_forms') and contrib_md['swap_forms']:
                 contrib_swaps.append(sid)
 
+        if contrib_md.get('LanguageContributor'):
+            lang_contributor_map[sid] = contrib_md['LanguageContributor']
+
+        if contrib_md.get('LanguageComment'):
+            lang_comment_map[sid] = contrib_md['LanguageComment']
+
+        if contrib_md.get('missing_metadata'):
+            missing_metadata[sid] = contrib_md['missing_metadata']
+
     return {
         'other_form_map': other_form_map,
         'rdfids': rdfids,
@@ -81,7 +93,10 @@ def prepare_additional_datasets(args, submissions_path, cache_dir):
         'contrib_repos': contrib_repos,
         'contrib_dois': contrib_dois,
         'contrib_skips': contrib_skips,
-        'contrib_swaps': contrib_swaps
+        'contrib_swaps': contrib_swaps,
+        'lang_contributor_map': lang_contributor_map,
+        'lang_comment_map': lang_comment_map,
+        'missing_metadata': missing_metadata
     }
 
 

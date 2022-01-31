@@ -66,7 +66,7 @@ def main(args):
         pycldf.Dataset.from_metadata(
             str(data_set_path / 'channumerals' / 'cldf' / 'cldf-metadata.json'))["FormTable"])
 
-    # add all other addition datasets and ignore datasets marked as 'skip'
+    # add all other additional datasets and ignore datasets marked as 'skip'
     is_numerals_ds_found = False
     for ds in pycldf.iter_datasets(cache_dir):
         if str(ds.directory).endswith('/cldf'):
@@ -77,6 +77,9 @@ def main(args):
                     continue
             if ds_dir == NUMERALS_RDFID:
                 is_numerals_ds_found = True
+            if 'missing_metadata' in ds_metadata and ds_dir in ds_metadata['missing_metadata']:
+                for k, v in ds_metadata['missing_metadata'][ds_dir].items():
+                    ds.properties[k] = v
             numeral_datasets.append(ds)
 
     assert is_numerals_ds_found, 'dataset "numerals" must be imported'
@@ -229,14 +232,31 @@ def main(args):
         ns_languages_contributor = "Contributor"
         if ns.languages.contributor is not None:
             ns_languages_contributor = ns.languages.contributor
+        elif "lang_contributor_map" in ds_metadata and ds_dir in ds_metadata["lang_contributor_map"]:
+            ns_languages_contributor = ds_metadata["lang_contributor_map"][ds_dir]
 
         ns_languages_comment = "Comment"
         if ns.languages.comment is not None:
             ns_languages_comment = ns.languages.comment
+        elif "lang_comment_map" in ds_metadata and ds_dir in ds_metadata["lang_comment_map"]:
+            ns_languages_comment = ds_metadata["lang_comment_map"][ds_dir]
+
+        try:
+            sep = ds["LanguageTable"].tableSchema.get_column(ns_languages_contributor).separator
+        except AttributeError:
+            sep = ""
 
         for language in ds["LanguageTable"]:
             if language[ns.languages.id] in lgs_with_no_data:
                 continue
+
+            if ns_languages_contributor in language:
+                if sep:
+                    creator = '{0} '.format(sep).join(language[ns_languages_contributor])
+                else:
+                    creator = language[ns_languages_contributor]
+            else:
+                creator = None
 
             # make language IDs unique cross datasets
             lg_id = unique_id(rdfID, language[ns.languages.id])
@@ -249,7 +269,7 @@ def main(args):
                     latitude=language[ns.languages.latitude],
                     longitude=language[ns.languages.longitude],
                     contrib_name=rdfID,
-                    creator=language.get(ns_languages_contributor, None),
+                    creator=creator,
                     comment=language.get(ns_languages_comment, None),
                     url_soure_name=language.get("SourceFile", None),
                 )
