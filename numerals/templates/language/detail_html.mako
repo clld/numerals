@@ -31,7 +31,7 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
         ${h.button('cite', onclick=h.JSModal.show(ctx.valuesets[0].contribution.name, request.resource_url(ctx.valuesets[0].contribution, ext='md.html')))}
     % endif
     % if ctx.creator:
-        <br /><br />Contributed by ${ctx.creator}
+        <br /><br /><b>${_('Contributor')}/${_('Source')}:</b><br /> ${ctx.creator}
     % endif
     </div>
 
