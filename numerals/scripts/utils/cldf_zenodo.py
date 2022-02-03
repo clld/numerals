@@ -7,6 +7,7 @@ import json
 import pathlib
 import zipfile
 import urllib.request
+import pycldf
 
 from bs4 import BeautifulSoup as bs
 import requests
@@ -18,13 +19,12 @@ def download_from_doi(doi, outdir=pathlib.Path('.')):
     res = requests.get(res.url + '/export/json')
     soup = bs(res.text, 'html.parser')
     res = json.loads(soup.find('pre').text)
-    assert any(kw.lower().startswith('cldf') for kw in res['metadata']['keywords'])
     for f in res['files']:
         if f['type'] == 'zip':
             r = requests.get(f['links']['self'], stream=True)
             z = zipfile.ZipFile(io.BytesIO(r.content))
             z.extractall(str(outdir))
-        elif f['type'] == 'gz':
+        elif f['type'] == 'tar':
             # what about a tar in there?
             raise NotImplementedError()
         elif f['type'] == 'gz':
@@ -34,4 +34,5 @@ def download_from_doi(doi, outdir=pathlib.Path('.')):
                 f['links']['self'],
                 outdir / f['links']['self'].split('/')[-1],
             )
+    assert pycldf.iter_datasets(outdir), 'no cldf dataset found'
     return outdir
