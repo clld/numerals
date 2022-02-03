@@ -7,6 +7,7 @@ import json
 import pathlib
 import zipfile
 import urllib.request
+import pycldf
 
 from bs4 import BeautifulSoup as bs
 import requests
@@ -33,6 +34,5 @@ def download_from_doi(doi, outdir=pathlib.Path('.')):
                 f['links']['self'],
                 outdir / f['links']['self'].split('/')[-1],
             )
-    sub_dirs = [f for f in outdir.iterdir() if f.is_dir()]
-    assert (outdir / sub_dirs[0] / 'cldf').is_dir(), 'no cldf directory found'
+    assert pycldf.iter_datasets(outdir), 'no cldf dataset found'
     return outdir
