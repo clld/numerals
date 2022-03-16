@@ -45,7 +45,7 @@
     Department of Cultural and Linguistic Evolution at the MPI for the Science
     of Human History in Jena. The Numeralbank database is designed and
     maintained by Hans-Jörg Bibiko. The Numeralbank team consists of (in
-    alphabetical order) Sieghard Beller, Andrea Bender, Hans-Jörg Bibiko, Robert
+    alphabetical order) Russell Barlow, Sieghard Beller, Andrea Bender, Hans-Jörg Bibiko, Robert
     Forkel, Simon Greenhill, Russell Gray, Harald Hammarström, Fiona Jordan,
     Christoph Rzymski, and
     Annemarie Verkerk.

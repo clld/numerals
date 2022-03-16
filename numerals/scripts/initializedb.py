@@ -114,6 +114,7 @@ def main(args):
     DBSession.add(dataset)
 
     for i, (id_, name) in enumerate([
+        ("barlowrussell", "Russell Barlow"),
         ("bellersieghard", "Sieghard Beller"),
         ("benderandrea", "Andrea Bender"),
         ("bibikohansjoerg", "Hans-Jörg Bibiko"),
