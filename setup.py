@@ -19,7 +19,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'attrs>=21.2',
-        'clld>=9',
+        'clld>=9.2.1',
         'clldmpg>=4.2.0',
         'clld-glottologfamily-plugin>=4.0.0',
         'clld-phylogeny-plugin>=1.5',
