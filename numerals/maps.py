@@ -4,7 +4,6 @@ from clld.web.maps import ParameterMap, Map
 class NumeralParameterMap(ParameterMap):
     def get_options(self):
         return {
-            'base_layer': 'Esri.WorldPhysical',
             'icon_size': 15,
             'max_zoom': 8,
             'hash': True,
@@ -14,7 +13,6 @@ class NumeralParameterMap(ParameterMap):
 class NumeralLanguagesMap(Map):
     def get_options(self):
         return {
-            'base_layer': 'Esri.WorldPhysical',
             'icon_size': 15,
             'max_zoom': 8,
             'hash': True,
