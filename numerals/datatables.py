@@ -294,7 +294,7 @@ class Datapoints(Values):
     def get_options(self):
         opts = super(Values, self).get_options()
         if self.parameter:
-            opts["aaSorting"] = [[1, "asc"], [2, "asc"], [0, "asc"]]
+            opts["aaSorting"] = [[2, "asc"], [3, "asc"], [0, "asc"]]
         else:
             opts["aaSorting"] = [[0, "asc"]]
 
@@ -309,6 +309,12 @@ class Datapoints(Values):
                     model_col=Language.name,
                     get_object=lambda i: i.valueset.language,
                 ),
+                LinkToMapCol(
+                    self,
+                    "m",
+                    get_object=lambda i: i.valueset.language,
+                    sTitle="Map Link"
+                ),
                 NumeralFamilyCol(
                     self,
                     "Family",
@@ -322,14 +328,8 @@ class Datapoints(Values):
                 ),
                 Col(
                     self,
-                    "contribution",
-                    model_col=Variety.contrib_name,
-                    choices=get_contributions(),
-                    get_object=lambda i: i.valueset.language
-                ),
-                Col(
-                    self,
                     "other_form",
+                    sTitle="Original Form",
                     model_col=NumberLexeme.other_form,
                 ),
                 Col(
@@ -343,11 +343,12 @@ class Datapoints(Values):
                     sTitle="Loan?",
                     model_col=NumberLexeme.is_loan,
                 ),
-                LinkToMapCol(
+                Col(
                     self,
-                    "m",
-                    get_object=lambda i: i.valueset.language,
-                    sTitle="Map Link"
+                    "contribution",
+                    model_col=Variety.contrib_name,
+                    choices=get_contributions(),
+                    get_object=lambda i: i.valueset.language
                 ),
             ]
         elif self.language:
@@ -366,6 +367,7 @@ class Datapoints(Values):
                 Col(
                     self,
                     "other_form",
+                    sTitle="Original Form",
                     model_col=NumberLexeme.other_form,
                 ),
                 Col(
@@ -402,6 +404,7 @@ class Datapoints(Values):
                 Col(
                     self,
                     "other_form",
+                    sTitle="Original Form",
                     model_col=NumberLexeme.other_form,
                 ),
                 Col(
