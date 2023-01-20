@@ -1,6 +1,5 @@
 import ete3
 from clld import interfaces
-from clld.web.adapters.cldf import CldfConfig
 from clld.web.adapters.geojson import GeoJsonLanguages
 from clld.web.util.htmllib import HTML
 from clld.web.util.helpers import link
@@ -14,30 +13,6 @@ from clld.db.models.common import (
     Parameter, ValueSet, Language, LanguageIdentifier, Identifier, IdentifierType)
 from clld.db.meta import DBSession
 from collections import defaultdict
-
-
-class NumeralsCldfConfig(CldfConfig):
-    module = 'StructureDataset'
-
-    def custom_schema(self, req, ds):
-        ds.add_columns(
-            'LanguageTable',
-            {'name': 'Family', 'datatype': 'string'})
-
-    def convert(self, model, item, req):
-        res = CldfConfig.convert(self, model, item, req)
-
-        if model == Language:
-            res['Macroarea'] = item.macroarea
-            res['Family'] = item.family
-
-        return res
-
-    def query(self, model):
-        q = CldfConfig.query(self, model)
-        if model == Language:
-            q = q.options(joinedload(Variety.family))
-        return q
 
 
 class NumeralbankTree(Tree):
@@ -194,8 +169,6 @@ class NumeralGeoJsonLanguages(GeoJsonLanguages):
 
 
 def includeme(config):
-    config.registry.registerUtility(NumeralsCldfConfig(),
-                                    interfaces.ICldfConfig)
     config.registry.registerUtility(NumeralbankTree, ITree)
     config.register_adapter(NumeralGeoJsonLanguages,
                             interfaces.ILanguage)
