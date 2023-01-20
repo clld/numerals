@@ -18,9 +18,9 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'attrs>=21.2',
-        'clld>=9.2.2',
-        'clldmpg>=4.2.0',
+        'attrs>=22.2',
+        'clld>=10',
+        'clldmpg>=4.3.0',
         'clld-glottologfamily-plugin>=4.0.0',
         'clld-phylogeny-plugin>=1.5',
         'clld-cognacy-plugin>=0.2.1',
