@@ -5,8 +5,7 @@ class NumeralParameterMap(ParameterMap):
     def get_options(self):
         return {
             'icon_size': 15,
-            'max_zoom': 8,
-            'hash': True,
+            'max_zoom': 10,
         }
 
 
@@ -14,8 +13,7 @@ class NumeralLanguagesMap(Map):
     def get_options(self):
         return {
             'icon_size': 15,
-            'max_zoom': 8,
-            'hash': True,
+            'max_zoom': 10,
             'info_query': {'map_pop_up': 1},
         }
 

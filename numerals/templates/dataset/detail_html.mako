@@ -5,7 +5,26 @@
     <%util:well>
         ${h.newline2br(h.text_citation(request, ctx))|n}
         ${h.cite_button(request, ctx)}
-        <div style="float:right;margin:10px;margin-top:60px">
+        <div style="float:left;margin:10px;margin-top:60px">
+            <h4>Statistics</h4>
+            <table class="table table-condensed">
+                <tbody>
+                <tr>
+                    <th>Languages</th>
+                    <td class="right">${'{:,}'.format(stats['language'])}</td>
+                </tr>
+                <tr>
+                    <th>Features</th>
+                    <td class="right">${'{:,}'.format(stats['parameter'])}</td>
+                </tr>
+                <tr>
+                    <th>Datapoints</th>
+                    <td class="right">${'{:,}'.format(stats['value'])}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="float:right;margin:10px;margin-top:20px">
           <p class="lead" style="text-align: center;margin-bottom:-10px"><small>Numeralbank is part of</small></p>
           <a href="https://glottobank.org">
             <img width="200px" src="${request.static_url('numerals:static/glottobank_all.png')}"/></a>
@@ -40,14 +59,14 @@
 <p>
     Entries in Numeralbank are largely based on data collected by Eugene Chan as
     part of the long-running project "Numeral Systems of the World's Languages"
-    that was hosted at the former Department of Linguistics at the MPI for
-    Evolutionary Anthropology in Leipzig. The data is now hosted at the
-    Department of Cultural and Linguistic Evolution at the MPI for the Science
-    of Human History in Jena. The Numeralbank database is designed and
-    maintained by Hans-Jörg Bibiko. The Numeralbank team consists of (in
-    alphabetical order) Russell Barlow, Sieghard Beller, Andrea Bender, Hans-Jörg Bibiko, Robert
-    Forkel, Simon Greenhill, Russell Gray, Harald Hammarström, Fiona Jordan,
-    Christoph Rzymski, and
-    Annemarie Verkerk.
+    that were hosted at the former Department of Linguistics at the MPI for
+    Evolutionary Anthropology in Leipzig and at the Department of Cultural and
+    Linguistic Evolution at the MPI for the Science of Human History in Jena.
+    The data is now hosted at the Department of Cultural and Linguistic Evolution
+    at the MPI for Evolutionary Anthropology in Leipzig. The Numeralbank database
+    is designed and maintained by Hans-Jörg Bibiko. The Numeralbank team consists
+    of (in alphabetical order) Russell Barlow, Sieghard Beller, Andrea Bender,
+    Hans-Jörg Bibiko, Robert Forkel, Simon Greenhill, Russell Gray, Harald Hammarström,
+    Fiona Jordan, Christoph Rzymski, and Annemarie Verkerk.
 </p>
 </p>

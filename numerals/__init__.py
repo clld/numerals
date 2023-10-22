@@ -1,5 +1,3 @@
-from functools import partial
-
 from clld.interfaces import IMapMarker, ICtxFactoryQuery
 from clld.db.models import common
 from clldutils import svg

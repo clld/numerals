@@ -157,7 +157,6 @@ def main(args):
     for language in ds["LanguageTable"]:
 
         if ns.languages.contributor in language:
-            args.log.info("JJJJJJ")
             if sep:
                 creator = '{0} '.format(sep).join(language[ns_languages_contributor])
             else:

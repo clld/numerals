@@ -2,6 +2,7 @@ from clld.web.util.multiselect import CombinationMultiSelect
 from clld.db.meta import DBSession
 from clld.db.models.common import Language, Identifier, LanguageIdentifier, IdentifierType, Contribution
 from clld.web.util.htmllib import HTML
+from clld import RESOURCES
 from numerals.models import Provider
 
 
@@ -46,3 +47,10 @@ def get_variety_links(request=None, context=None, idtype='glottocode', **kw):
             res += HTML.li(HTML.a(lg[1], href=lg[0]))
         return (HTML.ul(res), title_string)
     return ("", "")
+
+
+def dataset_detail_html(context=None, request=None, **kw):
+    return dict(
+        stats=context.get_stats(
+            [rsc for rsc in RESOURCES if rsc.name in ['language', 'parameter', 'value']])
+    )
