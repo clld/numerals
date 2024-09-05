@@ -91,10 +91,12 @@ def main(args):
 
     valid_contribs = set()
     contribs = {}
+    src_to_contrib_pks = {}
     for ct in ds["ContributionTable"]:
         doi = ''
         git_version = ''
         md = json.loads(ct["Metadata"])
+        print(md)
         if md["doi"]:
             doi = md["doi"]
             accessURL = 'https://doi.org/{0}'.format(doi)
@@ -115,13 +117,19 @@ def main(args):
         contribs[ct["ID"]] = contrib
         DBSession.add(contrib)
 
+        DBSession.flush()
+
+        if md["source"]:
+            src_to_contrib_pks[md["source"]] = contrib.pk
+
     DBSession.flush()
 
     for rid, rec in enumerate(Database.from_file(ds.bibpath, lowercase=True)):
         rec_id = rec.id
+        print(rec_id)
         if rec_id not in data['NumberSource']:
             ns = bibtex2source(rec, models.NumberSource)
-            ns.provider_pk = contrib.pk
+            ns.provider_pk = src_to_contrib_pks[rec_id] if rec_id in src_to_contrib_pks else None
             ns.id = rec_id
             src = data.add(
                 models.NumberSource,
