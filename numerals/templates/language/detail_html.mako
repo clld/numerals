@@ -55,7 +55,7 @@ ${request.get_datatable('values', h.models.Value, language=ctx).render()}
           </%util:accordion_group>
         % endif
         % if ctx.comment or ctx.url_soure_name:
-        <%util:accordion_group eid="acc-com" parent="sidebar-accordion" title="Comment" open="${False}">
+        <%util:accordion_group eid="acc-com" parent="sidebar-accordion" title="Comment" open="${True}">
             % if ctx.comment:
                 ${ctx.comment}
             % endif
