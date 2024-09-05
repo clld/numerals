@@ -42,7 +42,7 @@
     <dt class="source">${_('Source')}:</dt>
         % if ctx.source:
           % for s in ctx.source.split(','):
-            <dd>${h.link(request, '{0}-{1}'.format(ctx.contribution.id, s), rsc='source')}</dd>
+            <dd>${ctx.contribution.id}: ${h.link(request, '{0}'.format(s), rsc='source')}</dd>
           % endfor
         % endif
         % if ctx.references:
