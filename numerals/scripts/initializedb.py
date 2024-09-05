@@ -96,7 +96,6 @@ def main(args):
         doi = ''
         git_version = ''
         md = json.loads(ct["Metadata"])
-        print(md)
         if md["doi"]:
             doi = md["doi"]
             accessURL = 'https://doi.org/{0}'.format(doi)
@@ -126,7 +125,6 @@ def main(args):
 
     for rid, rec in enumerate(Database.from_file(ds.bibpath, lowercase=True)):
         rec_id = rec.id
-        print(rec_id)
         if rec_id not in data['NumberSource']:
             ns = bibtex2source(rec, models.NumberSource)
             ns.provider_pk = src_to_contrib_pks[rec_id] if rec_id in src_to_contrib_pks else None
