@@ -264,6 +264,7 @@ def main(args):
                 is_loan=form["Loan"] if "Loan" in form else None,
                 other_form=form[ns.forms.value],
                 org_form=None,
+                gloss=form["Gloss"],
                 is_problematic=form["Problematic"] if "Problematic" in form else None,
                 valueset=vs,
             )

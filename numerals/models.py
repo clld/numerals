@@ -41,6 +41,7 @@ class NumberLexeme(CustomModelMixin, Value):
     is_loan = Column(Boolean, default=False)
     other_form = Column(Unicode)
     org_form = Column(Unicode)
+    gloss = Column(Unicode)
     comment = Column(Unicode)
     is_problematic = Column(Boolean, default=False)
 
