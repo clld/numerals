@@ -27,7 +27,7 @@ setup(
         'csvw>=3.3.0',
         'pybtex>=0.24',
         'pycldf>=1.38.1',
-        'sqlalchemy>=1.4.46',
+        'sqlalchemy<2.0',
         'waitress',
         'ete3',
         'numpy',
