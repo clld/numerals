@@ -19,7 +19,7 @@ from sqlalchemy import func
 from datetime import date
 from pycldf import Wordlist
 from pyconcepticon import Concepticon
-from pylexibank import progressbar
+from tqdm import tqdm
 
 import numerals
 from numerals import models
@@ -230,7 +230,7 @@ def main(args):
 
     DBSession.flush()
 
-    for form in progressbar(ds["FormTable"], desc="Processing data"):
+    for form in tqdm(ds["FormTable"], desc="Processing data"):
 
         if form[ns.forms.parameterReference] not in param_map:
             continue
@@ -264,6 +264,7 @@ def main(args):
                 is_loan=form["Loan"] if "Loan" in form else None,
                 other_form=form[ns.forms.value],
                 org_form=None,
+                gloss=form["Gloss"],
                 is_problematic=form["Problematic"] if "Problematic" in form else None,
                 valueset=vs,
             )

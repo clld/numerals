@@ -334,6 +334,11 @@ class Datapoints(Values):
                 ),
                 Col(
                     self,
+                    "gloss",
+                    model_col=NumberLexeme.gloss,
+                ),
+                Col(
+                    self,
                     "comment",
                     model_col=NumberLexeme.comment,
                 ),
@@ -372,6 +377,11 @@ class Datapoints(Values):
                 ),
                 Col(
                     self,
+                    "gloss",
+                    model_col=NumberLexeme.gloss,
+                ),
+                Col(
+                    self,
                     "comment",
                     model_col=NumberLexeme.comment,
                 ),
@@ -406,6 +416,11 @@ class Datapoints(Values):
                     "other_form",
                     sTitle="Original Form",
                     model_col=NumberLexeme.other_form,
+                ),
+                Col(
+                    self,
+                    "gloss",
+                    model_col=NumberLexeme.gloss,
                 ),
                 Col(
                     self,
