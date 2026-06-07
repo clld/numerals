@@ -1,23 +1,20 @@
+import functools
+
 import ete3
 from clld import interfaces
 from clld.web.adapters.geojson import GeoJsonLanguages
 from clld.web.util.htmllib import HTML
-from clld.web.util.helpers import link
 from clld_phylogeny_plugin.interfaces import ITree
 from clld_phylogeny_plugin.tree import Tree
-from clldutils.misc import lazyproperty
 from ete3.coretype.tree import TreeError
-from sqlalchemy.orm import joinedload
-from numerals.models import Variety, get_color
-from clld.db.models.common import (
-    Parameter, ValueSet, Language, LanguageIdentifier, Identifier, IdentifierType)
+from numerals.models import get_color
+from clld.db.models.common import Language, LanguageIdentifier, Identifier, IdentifierType
 from clld.db.meta import DBSession
 from collections import defaultdict
 
 
 class NumeralbankTree(Tree):
-
-    @lazyproperty
+    @functools.cached_property
     def glottolog2language_ids(self):
         gl2langids = defaultdict(list)
         for p in DBSession.query(Identifier.name, LanguageIdentifier.language_pk)\
@@ -26,11 +23,11 @@ class NumeralbankTree(Tree):
             gl2langids[p[0]].append(p[1])
         return gl2langids
 
-    @lazyproperty
+    @functools.cached_property
     def langpk2language(self):
         return dict(p for p in DBSession.query(Language.pk, Language))
 
-    @lazyproperty
+    @functools.cached_property
     def pruned_newick(self):
         t = ete3.Tree(self.ctx.newick, format=9)
         try:
@@ -140,13 +137,13 @@ class NumeralbankTree(Tree):
         res['tip_values_sep'] = ' – '
         return res
 
-    @lazyproperty
+    @functools.cached_property
     def newick(self):
         if self.parameters:
             return self.pruned_newick
         return self.ctx.newick
 
-    @lazyproperty
+    @functools.cached_property
     def labelSpec(self):
         if self.parameters:
             r_ = {

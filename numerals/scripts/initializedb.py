@@ -1,13 +1,10 @@
-import ete3
+from datetime import date
 import json
-import pycldf
 import re
-import unicodedata
-import itertools
 
+import ete3
 from clldutils import color
 from clldutils.misc import slug
-from clldutils.path import Path
 from clld.db.meta import DBSession
 from clld.db.models import common
 from clld.lib.bibtex import Database
@@ -16,8 +13,6 @@ from clld_glottologfamily_plugin.util import load_families
 from clld_glottologfamily_plugin.models import Family
 from clld_phylogeny_plugin.models import Phylogeny, LanguageTreeLabel, TreeLabel
 from sqlalchemy import func
-from datetime import date
-from pycldf import Wordlist
 from pyconcepticon import Concepticon
 from tqdm import tqdm
 
@@ -30,9 +25,7 @@ NUMERALS_RDFID = 'numerals'
 
 
 def main(args):
-
     ds = args.cldf
-
     assert args.glottolog, 'The --glottolog option is required!'
     assert args.concepticon, 'The --concepticon option is required!'
 
@@ -45,7 +38,6 @@ def main(args):
     }
 
     data = Data()
-
     dataset = common.Dataset(
         id=numerals.__name__,
         name="Numeralbank",
@@ -62,7 +54,6 @@ def main(args):
             "license_name": "Creative Commons Attribution 4.0 International License",
         },
     )
-
     DBSession.add(dataset)
 
     for i, (id_, name) in enumerate([
@@ -81,12 +72,7 @@ def main(args):
         ed = data.add(common.Contributor, id_, id=id_, name=name)
         common.Editor(dataset=dataset, contributor=ed, ord=i + 1)
 
-    basis_parameter = data.add(
-        models.NumberParameter,
-        "-1",
-        id="-1",
-        name="Base",
-    )
+    basis_parameter = data.add(models.NumberParameter,"-1", id="-1", name="Base")
     DBSession.flush()
 
     valid_contribs = set()
@@ -98,10 +84,8 @@ def main(args):
         md = json.loads(ct["Metadata"])
         if md["doi"]:
             doi = md["doi"]
-            accessURL = 'https://doi.org/{0}'.format(doi)
         else:
             git_version = md.get("git_version", None)
-        accessURL = md.get("dcat:accessURL", None)
         valid_contribs.add(ct["ID"])
         contrib = models.Provider(
             id=ct["ID"],
@@ -109,7 +93,7 @@ def main(args):
             description=ct.get("Citation", None),
             license=md.get('dc:license', None),
             aboutUrl=md.get('aboutUrl', None),
-            accessURL=accessURL,
+            accessURL=md.get("dcat:accessURL", None),
             version=git_version,
             doi=doi,
         )
@@ -129,11 +113,7 @@ def main(args):
             ns = bibtex2source(rec, models.NumberSource)
             ns.provider_pk = src_to_contrib_pks[rec_id] if rec_id in src_to_contrib_pks else None
             ns.id = rec_id
-            src = data.add(
-                models.NumberSource,
-                rec_id,
-                _obj=ns,
-            )
+            data.add(models.NumberSource, rec_id, _obj=ns)
     DBSession.flush()
 
     ns = ds.column_names
@@ -164,9 +144,9 @@ def main(args):
 
         if ns.languages.contributor in language:
             if sep:
-                creator = '{0} '.format(sep).join(language[ns_languages_contributor])
+                creator = f'{sep} '.join(language[ns.languages_contributor])
             else:
-                creator = language[ns_languages_contributor]
+                creator = language[ns.languages_contributor]
         else:
             creator = None
 
@@ -179,7 +159,7 @@ def main(args):
                 comm = language["BaseComment"]
             cid = lg_id.split("-")[0]
             if cid not in valid_contribs:
-                srgs.log.warn("{} not a valid contribution ID".format(cid))
+                args.log.warn("%s not a valid contribution ID", cid)
             lang = data.add(
                 models.Variety,
                 lg_id,
@@ -197,7 +177,7 @@ def main(args):
             if language[ns.languages.iso639P3code]:
                 add_language_codes(data, lang, language[ns.languages.iso639P3code])
         else:
-            args.log.warn("Language ID '{0}' already exists".format(lg_id))
+            args.log.warn("Language ID '%s' already exists", lg_id)
 
     # Add Base info if given
     for language in ds["LanguageTable"]:
@@ -222,16 +202,11 @@ def main(args):
                 contribution=contribs[lg_id.split('-')[0]],
             )
 
-            common.Value(
-                id=data["Variety"][lg_id].id,
-                valueset=vs,
-                domainelement=de
-            )
+            common.Value(id=data["Variety"][lg_id].id, valueset=vs, domainelement=de)
 
     DBSession.flush()
 
     for form in tqdm(ds["FormTable"], desc="Processing data"):
-
         if form[ns.forms.parameterReference] not in param_map:
             continue
 
@@ -369,18 +344,14 @@ def prime_cache(args):
 
     phylo = Phylogeny(
         id="globaltree",
-        name="Glottolog Global Tree{0}".format(gltree_version),
+        name=f"Glottolog Global Tree{gltree_version}",
         newick=newick,
         description=gltree_description
     )
 
     for lg in langs:
         LanguageTreeLabel(
-            language=lg,
-            treelabel=TreeLabel(id="{0}-1".format(lg.id),
-                                name=lg.glottocode,
-                                phylogeny=phylo)
-        )
+            language=lg, treelabel=TreeLabel(id=f"{lg.id}-1", name=lg.glottocode, phylogeny=phylo))
     DBSession.add(phylo)
 
     families = DBSession.query(Family.pk, Family.name).all()
@@ -410,7 +381,6 @@ def prime_cache(args):
         p_pk += 1
         for lg in langs_in_family:
             LanguageTreeLabel(
-                language=lg, treelabel=TreeLabel(id="{0}-{1}".format(lg.id, p_pk),
-                                                 name=lg.glottocode, phylogeny=phylo)
-            )
+                language=lg, treelabel=TreeLabel(
+                    id=f"{lg.id}-{p_pk}", name=lg.glottocode, phylogeny=phylo))
         DBSession.add(phylo)

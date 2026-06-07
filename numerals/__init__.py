@@ -1,7 +1,7 @@
 from clld.interfaces import IMapMarker, ICtxFactoryQuery
 from clld.db.models import common
 from clldutils import svg
-from clld.web.app import menu_item, CtxFactoryQuery
+from clld.web.app import CtxFactoryQuery
 from clld.web.icon import MapMarker
 from pyramid.config import Configurator
 from sqlalchemy.orm import joinedload
@@ -49,7 +49,7 @@ def main(global_config, **settings):
     """
     settings['route_patterns'] = {
         'phylogenys': '/phylogenies',
-        'phylogeny': '/phylogenies/{id:[^/\.]+}',
+        'phylogeny': r'/phylogenies/{id:[^/\.]+}',
     }
     config = Configurator(settings=settings)
     config.include('clldmpg')
