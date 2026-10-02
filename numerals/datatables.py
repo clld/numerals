@@ -324,6 +324,11 @@ class Datapoints(Values):
             self,
             "gloss",
             model_col=NumberLexeme.gloss)
+        gloss_math = Col(
+            self,
+            "gloss_math",
+            sTitle="Gloss (math)",
+            model_col=NumberLexeme.gloss_math)
         comment = Col(
             self,
             "comment",
@@ -351,14 +356,16 @@ class Datapoints(Values):
                 choices=get_contributions(),
                 get_object=lambda i: i.valueset.language)
             return [
-                language, map_link, family, form, original_form, gloss, comment,
-                is_loan, contribution]
+                language, map_link, family, form, original_form, gloss,
+                gloss_math, comment, is_loan, contribution]
         elif self.language:
-            return [parameter, form, original_form, gloss, comment, is_loan]
+            return [
+                parameter, form, original_form, gloss, gloss_math, comment,
+                is_loan]
         else:
             return [
-                parameter, language, form, original_form, gloss, comment,
-                is_loan]
+                parameter, language, form, original_form, gloss, gloss_math,
+                comment, is_loan]
 
 
 def includeme(config):

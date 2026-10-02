@@ -240,6 +240,7 @@ def main(args):
                 other_form=form[ns.forms.value],
                 org_form=None,
                 gloss=form["Gloss"],
+                gloss_math=form["GlossMath"],
                 is_problematic=form["Problematic"] if "Problematic" in form else None,
                 valueset=vs,
             )
