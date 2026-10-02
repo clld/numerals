@@ -301,139 +301,64 @@ class Datapoints(Values):
         return opts
 
     def col_defs(self):
+        language = LinkCol(
+            self,
+            "language",
+            model_col=Language.name,
+            get_object=lambda i: i.valueset.language)
+        parameter = NumeralValueCol(
+            self,
+            "parameter",
+            model_col=Parameter.name,
+            get_object=lambda i: i.valueset.parameter)
+        form = NumeralValueNameCol(
+            self,
+            "form",
+            model_col=Value.name)
+        original_form = Col(
+            self,
+            "other_form",
+            sTitle="Original Form",
+            model_col=NumberLexeme.other_form)
+        gloss = Col(
+            self,
+            "gloss",
+            model_col=NumberLexeme.gloss)
+        comment = Col(
+            self,
+            "comment",
+            model_col=NumberLexeme.comment)
+        is_loan = BoolCol(
+            self,
+            "is_loan",
+            sTitle="Loan?",
+            model_col=NumberLexeme.is_loan)
         if self.parameter:
+            map_link = LinkToMapCol(
+                self,
+                "m",
+                get_object=lambda i: i.valueset.language,
+                sTitle="Map Link")
+            family = NumeralFamilyCol(
+                self,
+                "Family",
+                Variety,
+                get_object=lambda i: i.valueset.language)
+            contribution = Col(
+                self,
+                "contribution",
+                model_col=Variety.contrib_name,
+                choices=get_contributions(),
+                get_object=lambda i: i.valueset.language)
             return [
-                LinkCol(
-                    self,
-                    "language",
-                    model_col=Language.name,
-                    get_object=lambda i: i.valueset.language,
-                ),
-                LinkToMapCol(
-                    self,
-                    "m",
-                    get_object=lambda i: i.valueset.language,
-                    sTitle="Map Link"
-                ),
-                NumeralFamilyCol(
-                    self,
-                    "Family",
-                    Variety,
-                    get_object=lambda i: i.valueset.language
-                ),
-                NumeralValueNameCol(
-                    self,
-                    "form",
-                    model_col=Value.name,
-                ),
-                Col(
-                    self,
-                    "other_form",
-                    sTitle="Original Form",
-                    model_col=NumberLexeme.other_form,
-                ),
-                Col(
-                    self,
-                    "gloss",
-                    model_col=NumberLexeme.gloss,
-                ),
-                Col(
-                    self,
-                    "comment",
-                    model_col=NumberLexeme.comment,
-                ),
-                BoolCol(
-                    self,
-                    "is_loan",
-                    sTitle="Loan?",
-                    model_col=NumberLexeme.is_loan,
-                ),
-                Col(
-                    self,
-                    "contribution",
-                    model_col=Variety.contrib_name,
-                    choices=get_contributions(),
-                    get_object=lambda i: i.valueset.language
-                ),
-            ]
+                language, map_link, family, form, original_form, gloss, comment,
+                is_loan, contribution]
         elif self.language:
-            return [
-                NumeralValueCol(
-                    self,
-                    "parameter",
-                    model_col=Parameter.name,
-                    get_object=lambda i: i.valueset.parameter,
-                ),
-                NumeralValueNameCol(
-                    self,
-                    "form",
-                    model_col=Value.name
-                ),
-                Col(
-                    self,
-                    "other_form",
-                    sTitle="Original Form",
-                    model_col=NumberLexeme.other_form,
-                ),
-                Col(
-                    self,
-                    "gloss",
-                    model_col=NumberLexeme.gloss,
-                ),
-                Col(
-                    self,
-                    "comment",
-                    model_col=NumberLexeme.comment,
-                ),
-                BoolCol(
-                    self,
-                    "is_loan",
-                    sTitle="Loan?",
-                    model_col=NumberLexeme.is_loan,
-                ),
-            ]
+            return [parameter, form, original_form, gloss, comment, is_loan]
         else:
             return [
-                NumeralValueCol(
-                    self,
-                    "parameter",
-                    model_col=Parameter.name,
-                    get_object=lambda i: i.valueset.parameter,
-                ),
-                LinkCol(
-                    self,
-                    "language",
-                    model_col=Language.name,
-                    get_object=lambda i: i.valueset.language,
-                ),
-                NumeralValueNameCol(
-                    self,
-                    "form",
-                    model_col=Value.name
-                ),
-                Col(
-                    self,
-                    "other_form",
-                    sTitle="Original Form",
-                    model_col=NumberLexeme.other_form,
-                ),
-                Col(
-                    self,
-                    "gloss",
-                    model_col=NumberLexeme.gloss,
-                ),
-                Col(
-                    self,
-                    "comment",
-                    model_col=NumberLexeme.comment,
-                ),
-                BoolCol(
-                    self,
-                    "is_loan",
-                    sTitle="Loan?",
-                    model_col=NumberLexeme.is_loan,
-                ),
-            ]
+                parameter, language, form, original_form, gloss, comment,
+                is_loan]
 
 
 def includeme(config):
