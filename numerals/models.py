@@ -43,7 +43,9 @@ class NumberLexeme(CustomModelMixin, Value):
     org_form = Column(Unicode)
     gloss = Column(Unicode)
     gloss_math = Column(Unicode)
+    alternate_gloss = Column(Unicode)
     comment = Column(Unicode)
+    comment_glosser = Column(Unicode)
     is_problematic = Column(Boolean, default=False)
 
 

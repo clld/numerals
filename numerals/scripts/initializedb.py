@@ -241,6 +241,8 @@ def main(args):
                 org_form=None,
                 gloss=form["Gloss"],
                 gloss_math=form["GlossMath"],
+                alternate_gloss=form["AlternateGloss"],
+                comment_glosser=form["CommentGlosser"],
                 is_problematic=form["Problematic"] if "Problematic" in form else None,
                 valueset=vs,
             )
