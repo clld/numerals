@@ -56,7 +56,7 @@ class Variety(CustomModelMixin, Language, HasFamilyMixin):
     comment = Column(Unicode)
     url_soure_name = Column(Unicode)
     contrib_name = Column(Unicode)
-    has_glosses = Column(Boolean)
+    has_glosses = Column(Boolean, default=False)
 
 
 @implementer(interfaces.IParameter)

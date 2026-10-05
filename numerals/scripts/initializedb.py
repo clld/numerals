@@ -37,6 +37,8 @@ def main(args):
         if c.semanticfield == 'Quantity' and c.ontological_category == 'Number'
     }
 
+    DBSession.execute("CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;")
+
     data = Data()
     dataset = common.Dataset(
         id=numerals.__name__,
@@ -176,7 +178,7 @@ def main(args):
                 creator=creator,
                 comment=comm,
                 url_soure_name=language.get("SourceFile", None),
-                has_glosses=language_has_glosses.get(lg_id) or False,
+                has_glosses=language_has_glosses.get(lg_id) or None,
             )
             if language[ns.languages.glottocode]:
                 load_family_langs.append((language[ns.languages.glottocode], lang))

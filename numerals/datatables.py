@@ -1,3 +1,5 @@
+import unicodedata
+
 from clld.db.models.common import (
     Language, Parameter, DomainElement, Value, Contribution,
     ValueSet, Identifier, LanguageIdentifier, IdentifierType, Source
@@ -16,7 +18,7 @@ from clld_glottologfamily_plugin.datatables import FamilyCol
 from clld_glottologfamily_plugin.models import Family
 from clld_cognacy_plugin.datatables import ConcepticonCol
 from clld_cognacy_plugin.util import concepticon_link
-from sqlalchemy import BigInteger, and_, func
+from sqlalchemy import BigInteger, and_, or_, func
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.orm import joinedload
 
@@ -79,6 +81,18 @@ class NumeralValueNameCol(ValueNameCol):
             return icontains(DomainElement.name, qs)
         else:
             return icontains(Value.name, qs)
+
+
+class OriginalFormCol(Col):
+    def order(self):
+        return func.lower(func.unaccent(self.model_col))
+
+    def search(self, qs):
+        normalised_qs = unicodedata.normalize('NFKD', qs).lower()
+        return or_(
+            icontains(self.model_col, qs),
+            func.unaccent(func.lower(self.model_col)).contains(
+                func.unaccent(normalised_qs)))
 
 
 class NumeralParameterCol(LinkCol):
@@ -233,6 +247,12 @@ class Varieties(Languages):
                 model_col=Variety.contrib_name,
                 choices=get_contributions(),
             ),
+            BoolCol(
+                self,
+                "has_glosses",
+                sTitle="Glossed?",
+                model_col=Variety.has_glosses,
+            ),
         ]
 
 
@@ -276,20 +296,26 @@ class Numerals(Parameters):
 
 class Datapoints(Values):
     def base_query(self, query):
-        query = Values.base_query(self, query)
-        if self.parameter:
-            return query.join(Family, isouter=True).options(
-                joinedload(Value.valueset).joinedload(ValueSet.language),
-            )
-        elif self.contribution:
-            return query.join(Language, isouter=True).options(
-                joinedload(Value.valueset).joinedload(ValueSet.parameter),
-                joinedload(Value.valueset).joinedload(ValueSet.language),
-                joinedload(Value.valueset).joinedload(ValueSet.contribution),
-                joinedload(Value.domainelement),
-            )
+        query = query.join(Value.valueset)
+        query = query.join(Value.domainelement, isouter=True)
+
+        if self.language:
+            query = query.filter(ValueSet.language_pk == self.language.pk)
         else:
-            return query
+            query = query.join(Variety, ValueSet.language)
+
+        if self.parameter:
+            query = query.join(Family, isouter=True)
+            query = query.filter(ValueSet.parameter_pk == self.parameter.pk)
+        else:
+            query = query.join(NumberParameter, ValueSet.parameter)
+
+        if self.contribution:
+            query = query.filter(ValueSet.contribution_pk == self.contribution.pk)
+        else:
+            query = query.join(Provider, ValueSet.contribution)
+
+        return query
 
     def get_options(self):
         opts = super(Values, self).get_options()
@@ -315,7 +341,7 @@ class Datapoints(Values):
             self,
             "form",
             model_col=Value.name)
-        original_form = Col(
+        original_form = OriginalFormCol(
             self,
             "other_form",
             sTitle="Original Form",
@@ -329,15 +355,21 @@ class Datapoints(Values):
             "gloss_math",
             sTitle="Gloss (math)",
             model_col=NumberLexeme.gloss_math)
-        comment = Col(
+        alternate_gloss = Col(
+            self,
+            "alternate_gloss",
+            sTitle="Alternate Gloss",
+            model_col=NumberLexeme.alternate_gloss)
+        comment_glosser = Col(
             self,
             "comment",
-            model_col=NumberLexeme.comment)
-        is_loan = BoolCol(
+            sTitle="Comment (glosser)",
+            model_col=NumberLexeme.comment_glosser)
+        comment_contributor = Col(
             self,
-            "is_loan",
-            sTitle="Loan?",
-            model_col=NumberLexeme.is_loan)
+            "comment",
+            sTitle="Comment (contributor)",
+            model_col=NumberLexeme.comment)
         if self.parameter:
             map_link = LinkToMapCol(
                 self,
@@ -357,15 +389,16 @@ class Datapoints(Values):
                 get_object=lambda i: i.valueset.language)
             return [
                 language, map_link, family, form, original_form, gloss,
-                gloss_math, comment, is_loan, contribution]
+                gloss_math, alternate_gloss, comment_glosser,
+                comment_contributor, contribution]
         elif self.language:
             return [
-                parameter, form, original_form, gloss, gloss_math, comment,
-                is_loan]
+                parameter, form, original_form, gloss, gloss_math,
+                alternate_gloss, comment_glosser, comment_contributor]
         else:
             return [
                 parameter, language, form, original_form, gloss, gloss_math,
-                comment, is_loan]
+                alternate_gloss, comment_glosser, comment_contributor]
 
 
 def includeme(config):
