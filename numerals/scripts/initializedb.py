@@ -139,6 +139,11 @@ def main(args):
     except AttributeError:
         sep = ""
 
+    language_has_glosses = {
+        form[ns.forms.languageReference]: True
+        for form in ds["FormTable"]
+        if form.get('Gloss')}
+
     load_family_langs = []
     for language in ds["LanguageTable"]:
 
@@ -171,6 +176,7 @@ def main(args):
                 creator=creator,
                 comment=comm,
                 url_soure_name=language.get("SourceFile", None),
+                has_glosses=language_has_glosses.get(lg_id) or False,
             )
             if language[ns.languages.glottocode]:
                 load_family_langs.append((language[ns.languages.glottocode], lang))
