@@ -226,16 +226,6 @@ class Varieties(Languages):
                 'ISO',
                 sTitle='ISO 639-3'
             ),
-            Col(
-                self,
-                'latitude',
-                sDescription='<small>The geographic latitude</small>'
-            ),
-            Col(
-                self,
-                'longitude',
-                sDescription='<small>The geographic longitude</small>'
-            ),
             FamilyCol(
                 self,
                 "Family",
