@@ -242,10 +242,10 @@ def main(args):
         DBSession.add(
             models.NumberLexeme(
                 id=form[ns.forms.id],
-                name=form[ns.forms.form],
+                name=form[ns.forms.value],
                 comment=form[ns.forms.comment],
                 is_loan=form["Loan"] if "Loan" in form else None,
-                other_form=form[ns.forms.value],
+                other_form=form[ns.forms.form],
                 org_form=None,
                 gloss=form["Gloss"],
                 gloss_math=form["GlossMath"],

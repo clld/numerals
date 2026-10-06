@@ -331,10 +331,10 @@ class Datapoints(Values):
             self,
             "form",
             model_col=Value.name)
-        original_form = OriginalFormCol(
+        latin_transcription = OriginalFormCol(
             self,
             "other_form",
-            sTitle="Original Form",
+            sTitle="Simplified Standard Orthography",
             model_col=NumberLexeme.other_form)
         gloss = Col(
             self,
@@ -378,17 +378,18 @@ class Datapoints(Values):
                 choices=get_contributions(),
                 get_object=lambda i: i.valueset.language)
             return [
-                language, map_link, family, form, original_form, gloss,
+                language, map_link, family, form, latin_transcription, gloss,
                 gloss_math, alternate_gloss, comment_glosser,
                 comment_contributor, contribution]
         elif self.language:
             return [
-                parameter, form, original_form, gloss, gloss_math,
+                parameter, form, latin_transcription, gloss, gloss_math,
                 alternate_gloss, comment_glosser, comment_contributor]
         else:
             return [
-                parameter, language, form, original_form, gloss, gloss_math,
-                alternate_gloss, comment_glosser, comment_contributor]
+                parameter, language, form, latin_transcription, gloss,
+                gloss_math, alternate_gloss, comment_glosser,
+                comment_contributor]
 
 
 def includeme(config):
