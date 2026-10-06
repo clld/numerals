@@ -5,7 +5,9 @@
 
 <h2>${_('Language')} ${ctx.name}</h2>
 
+<div style="overflow: scroll;">
 ${request.get_datatable('values', h.models.Value, language=ctx).render()}
+</div>
 
 <%def name="sidebar()">
     <ul class="inline codes">
