@@ -42,7 +42,10 @@ class NumberLexeme(CustomModelMixin, Value):
     other_form = Column(Unicode)
     org_form = Column(Unicode)
     gloss = Column(Unicode)
+    gloss_math = Column(Unicode)
+    alternate_gloss = Column(Unicode)
     comment = Column(Unicode)
+    comment_glosser = Column(Unicode)
     is_problematic = Column(Boolean, default=False)
 
 
@@ -53,6 +56,7 @@ class Variety(CustomModelMixin, Language, HasFamilyMixin):
     comment = Column(Unicode)
     url_soure_name = Column(Unicode)
     contrib_name = Column(Unicode)
+    has_glosses = Column(Boolean, default=False)
 
 
 @implementer(interfaces.IParameter)

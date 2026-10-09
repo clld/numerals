@@ -37,6 +37,8 @@ def main(args):
         if c.semanticfield == 'Quantity' and c.ontological_category == 'Number'
     }
 
+    DBSession.execute("CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;")
+
     data = Data()
     dataset = common.Dataset(
         id=numerals.__name__,
@@ -139,6 +141,11 @@ def main(args):
     except AttributeError:
         sep = ""
 
+    language_has_glosses = {
+        form[ns.forms.languageReference]: True
+        for form in ds["FormTable"]
+        if form.get('Gloss')}
+
     load_family_langs = []
     for language in ds["LanguageTable"]:
 
@@ -171,6 +178,7 @@ def main(args):
                 creator=creator,
                 comment=comm,
                 url_soure_name=language.get("SourceFile", None),
+                has_glosses=language_has_glosses.get(lg_id) or None,
             )
             if language[ns.languages.glottocode]:
                 load_family_langs.append((language[ns.languages.glottocode], lang))
@@ -234,12 +242,15 @@ def main(args):
         DBSession.add(
             models.NumberLexeme(
                 id=form[ns.forms.id],
-                name=form[ns.forms.form],
+                name=form[ns.forms.value],
                 comment=form[ns.forms.comment],
                 is_loan=form["Loan"] if "Loan" in form else None,
-                other_form=form[ns.forms.value],
+                other_form=form[ns.forms.form],
                 org_form=None,
                 gloss=form["Gloss"],
+                gloss_math=form["GlossMath"],
+                alternate_gloss=form["AlternateGloss"],
+                comment_glosser=form["CommentGlosser"],
                 is_problematic=form["Problematic"] if "Problematic" in form else None,
                 valueset=vs,
             )

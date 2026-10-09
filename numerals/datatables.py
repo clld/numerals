@@ -1,3 +1,5 @@
+import unicodedata
+
 from clld.db.models.common import (
     Language, Parameter, DomainElement, Value, Contribution,
     ValueSet, Identifier, LanguageIdentifier, IdentifierType, Source
@@ -16,7 +18,7 @@ from clld_glottologfamily_plugin.datatables import FamilyCol
 from clld_glottologfamily_plugin.models import Family
 from clld_cognacy_plugin.datatables import ConcepticonCol
 from clld_cognacy_plugin.util import concepticon_link
-from sqlalchemy import BigInteger, and_, func
+from sqlalchemy import BigInteger, and_, or_, func
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.orm import joinedload
 
@@ -79,6 +81,18 @@ class NumeralValueNameCol(ValueNameCol):
             return icontains(DomainElement.name, qs)
         else:
             return icontains(Value.name, qs)
+
+
+class OriginalFormCol(Col):
+    def order(self):
+        return func.lower(func.unaccent(self.model_col))
+
+    def search(self, qs):
+        normalised_qs = unicodedata.normalize('NFKD', qs).lower()
+        return or_(
+            icontains(self.model_col, qs),
+            func.unaccent(func.lower(self.model_col)).contains(
+                func.unaccent(normalised_qs)))
 
 
 class NumeralParameterCol(LinkCol):
@@ -212,16 +226,6 @@ class Varieties(Languages):
                 'ISO',
                 sTitle='ISO 639-3'
             ),
-            Col(
-                self,
-                'latitude',
-                sDescription='<small>The geographic latitude</small>'
-            ),
-            Col(
-                self,
-                'longitude',
-                sDescription='<small>The geographic longitude</small>'
-            ),
             FamilyCol(
                 self,
                 "Family",
@@ -232,6 +236,12 @@ class Varieties(Languages):
                 "contribution",
                 model_col=Variety.contrib_name,
                 choices=get_contributions(),
+            ),
+            BoolCol(
+                self,
+                "has_glosses",
+                sTitle="Glossed?",
+                model_col=Variety.has_glosses,
             ),
         ]
 
@@ -276,20 +286,26 @@ class Numerals(Parameters):
 
 class Datapoints(Values):
     def base_query(self, query):
-        query = Values.base_query(self, query)
-        if self.parameter:
-            return query.join(Family, isouter=True).options(
-                joinedload(Value.valueset).joinedload(ValueSet.language),
-            )
-        elif self.contribution:
-            return query.join(Language, isouter=True).options(
-                joinedload(Value.valueset).joinedload(ValueSet.parameter),
-                joinedload(Value.valueset).joinedload(ValueSet.language),
-                joinedload(Value.valueset).joinedload(ValueSet.contribution),
-                joinedload(Value.domainelement),
-            )
+        query = query.join(Value.valueset)
+        query = query.join(Value.domainelement, isouter=True)
+
+        if self.language:
+            query = query.filter(ValueSet.language_pk == self.language.pk)
         else:
-            return query
+            query = query.join(Variety, ValueSet.language)
+
+        if self.parameter:
+            query = query.join(Family, isouter=True)
+            query = query.filter(ValueSet.parameter_pk == self.parameter.pk)
+        else:
+            query = query.join(NumberParameter, ValueSet.parameter)
+
+        if self.contribution:
+            query = query.filter(ValueSet.contribution_pk == self.contribution.pk)
+        else:
+            query = query.join(Provider, ValueSet.contribution)
+
+        return query
 
     def get_options(self):
         opts = super(Values, self).get_options()
@@ -301,139 +317,79 @@ class Datapoints(Values):
         return opts
 
     def col_defs(self):
+        language = LinkCol(
+            self,
+            "language",
+            model_col=Language.name,
+            get_object=lambda i: i.valueset.language)
+        parameter = NumeralValueCol(
+            self,
+            "parameter",
+            model_col=Parameter.name,
+            get_object=lambda i: i.valueset.parameter)
+        form = NumeralValueNameCol(
+            self,
+            "form",
+            model_col=Value.name)
+        latin_transcription = OriginalFormCol(
+            self,
+            "other_form",
+            sTitle="Simplified Standard Orthography",
+            model_col=NumberLexeme.other_form)
+        gloss = Col(
+            self,
+            "gloss",
+            model_col=NumberLexeme.gloss)
+        gloss_math = Col(
+            self,
+            "gloss_math",
+            sTitle="Gloss (math)",
+            model_col=NumberLexeme.gloss_math)
+        alternate_gloss = Col(
+            self,
+            "alternate_gloss",
+            sTitle="Alternate Gloss",
+            model_col=NumberLexeme.alternate_gloss)
+        comment_glosser = Col(
+            self,
+            "comment",
+            sTitle="Comment (glosser)",
+            model_col=NumberLexeme.comment_glosser)
+        comment_contributor = Col(
+            self,
+            "comment",
+            sTitle="Comment (contributor)",
+            model_col=NumberLexeme.comment)
         if self.parameter:
+            map_link = LinkToMapCol(
+                self,
+                "m",
+                get_object=lambda i: i.valueset.language,
+                sTitle="Map Link")
+            family = NumeralFamilyCol(
+                self,
+                "Family",
+                Variety,
+                get_object=lambda i: i.valueset.language)
+            contribution = Col(
+                self,
+                "contribution",
+                model_col=Variety.contrib_name,
+                choices=get_contributions(),
+                get_object=lambda i: i.valueset.language)
             return [
-                LinkCol(
-                    self,
-                    "language",
-                    model_col=Language.name,
-                    get_object=lambda i: i.valueset.language,
-                ),
-                LinkToMapCol(
-                    self,
-                    "m",
-                    get_object=lambda i: i.valueset.language,
-                    sTitle="Map Link"
-                ),
-                NumeralFamilyCol(
-                    self,
-                    "Family",
-                    Variety,
-                    get_object=lambda i: i.valueset.language
-                ),
-                NumeralValueNameCol(
-                    self,
-                    "form",
-                    model_col=Value.name,
-                ),
-                Col(
-                    self,
-                    "other_form",
-                    sTitle="Original Form",
-                    model_col=NumberLexeme.other_form,
-                ),
-                Col(
-                    self,
-                    "gloss",
-                    model_col=NumberLexeme.gloss,
-                ),
-                Col(
-                    self,
-                    "comment",
-                    model_col=NumberLexeme.comment,
-                ),
-                BoolCol(
-                    self,
-                    "is_loan",
-                    sTitle="Loan?",
-                    model_col=NumberLexeme.is_loan,
-                ),
-                Col(
-                    self,
-                    "contribution",
-                    model_col=Variety.contrib_name,
-                    choices=get_contributions(),
-                    get_object=lambda i: i.valueset.language
-                ),
-            ]
+                language, map_link, family, form, latin_transcription, gloss,
+                gloss_math, alternate_gloss, comment_glosser,
+                comment_contributor, contribution]
         elif self.language:
             return [
-                NumeralValueCol(
-                    self,
-                    "parameter",
-                    model_col=Parameter.name,
-                    get_object=lambda i: i.valueset.parameter,
-                ),
-                NumeralValueNameCol(
-                    self,
-                    "form",
-                    model_col=Value.name
-                ),
-                Col(
-                    self,
-                    "other_form",
-                    sTitle="Original Form",
-                    model_col=NumberLexeme.other_form,
-                ),
-                Col(
-                    self,
-                    "gloss",
-                    model_col=NumberLexeme.gloss,
-                ),
-                Col(
-                    self,
-                    "comment",
-                    model_col=NumberLexeme.comment,
-                ),
-                BoolCol(
-                    self,
-                    "is_loan",
-                    sTitle="Loan?",
-                    model_col=NumberLexeme.is_loan,
-                ),
-            ]
+                parameter, form, latin_transcription, gloss, gloss_math,
+                alternate_gloss, comment_glosser, comment_contributor]
         else:
             return [
-                NumeralValueCol(
-                    self,
-                    "parameter",
-                    model_col=Parameter.name,
-                    get_object=lambda i: i.valueset.parameter,
-                ),
-                LinkCol(
-                    self,
-                    "language",
-                    model_col=Language.name,
-                    get_object=lambda i: i.valueset.language,
-                ),
-                NumeralValueNameCol(
-                    self,
-                    "form",
-                    model_col=Value.name
-                ),
-                Col(
-                    self,
-                    "other_form",
-                    sTitle="Original Form",
-                    model_col=NumberLexeme.other_form,
-                ),
-                Col(
-                    self,
-                    "gloss",
-                    model_col=NumberLexeme.gloss,
-                ),
-                Col(
-                    self,
-                    "comment",
-                    model_col=NumberLexeme.comment,
-                ),
-                BoolCol(
-                    self,
-                    "is_loan",
-                    sTitle="Loan?",
-                    model_col=NumberLexeme.is_loan,
-                ),
-            ]
+                parameter, language, form, latin_transcription, gloss,
+                gloss_math, alternate_gloss, comment_glosser,
+                comment_contributor]
 
 
 def includeme(config):
